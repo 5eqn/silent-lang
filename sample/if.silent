@@ -1,0 +1,4 @@
+let a = _ in
+let b = if a == 1 then 114 else 514 in
+let c = if a == 2 then 51121 else b in
+c
