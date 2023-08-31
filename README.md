@@ -1,10 +1,10 @@
 ## silent-lang
 
-silently compiles fp to llvm.
+Silently compiles FP to LLVM-IR.
 
 ### features
 
 - [x] partial evaluation
 - [x] input
 - [ ] print
-- [ ] control flow
+- [x] control flow
