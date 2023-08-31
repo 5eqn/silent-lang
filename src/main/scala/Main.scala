@@ -164,7 +164,7 @@ enum IRType:
 enum IRVal:
   case Num(value: Int)
   case Var(name: String)
-  case Lam(fn: IRVal => (IRVal, IRType))
+  case Lam(fn: (IRVal, IROps) => (IRVal, IRType, IROps))
 
   override def toString() = this match
     case Num(value) => value.toString()
@@ -175,22 +175,45 @@ enum IRVal:
 
 enum IROp:
   case Inp(res: String)
-  case Add(res: String, ty: IRType, lhs: IRVal, rhs: IRVal)
+  case Add(res: String, lhs: IRVal, rhs: IRVal)
   case Let(res: String, value: IRVal)
+  case Alt(res: String, lhs: IRVal, rhs: IRVal, x: IRPack, y: IRPack)
 
   override def toString() = this match
-    case Inp(res)               => s"  %$res = call i32 @input()"
-    case Add(res, ty, lhs, rhs) => s"  %$res = add nsw $ty $lhs $rhs"
-    case Let(res, value)        => s"  %$res = $value"
+    case Inp(res)           => s"  %$res = call i32 @input()"
+    case Add(res, lhs, rhs) => s"  %$res = add nsw i32 $lhs, $rhs"
+    case Let(res, value)    => s"  %$res = $value"
+    case Alt(res, lhs, rhs, x, y) =>
+      val flag = fresh
+      val ptr = fresh
+      val label1 = fresh
+      val label2 = fresh
+      val label3 = fresh
+      s"""  %$flag = icmp eq i32 $lhs, $rhs
+  %$ptr = alloca i32, align 4
+  br i1 %$flag, label %$label1, label %$label2
 
-// 操作列表
+$label1:
+${x.store(ptr)}
+  br label %$label3
 
-var irops = List[IROp]()
+$label2:
+${y.store(ptr)}
+  br label %$label3
 
-def push(irop: IROp) =
-  irops = irop :: irops
+$label3:
+  %$res = load i32, ptr %$ptr, align 4"""
 
-def opsStr = irops.reverse.map(op => op.toString() + "\n").mkString("")
+case class IROps(ops: List[IROp]):
+  def add(irop: IROp) = IROps(irop :: ops)
+  override def toString() =
+    ops.reverse.map(op => op.toString() + "\n").mkString("")
+
+object IROps:
+  def empty = IROps(List())
+
+case class IRPack(value: IRVal, ty: IRType, ops: IROps):
+  def store(res: String) = s"""$ops  store $ty $value, ptr %$res, align 4"""
 
 // 新变量名生成器
 
@@ -214,38 +237,89 @@ object Ctx:
 
 // 部分求值
 
-def pEval(ctx: Ctx, term: Term): (IRVal, IRType) = term match
-  case Term.Inp =>
-    val name = fresh
-    push(IROp.Inp(name))
-    (IRVal.Var(name), IRType.I32)
-  case Term.Num(value) => (IRVal.Num(value), IRType.I32)
-  case Term.Var(name) =>
-    (ctx.valueOf(name), ctx.typeOf(name))
-  case Term.Lam(param, ty, body) =>
-    (IRVal.Lam(arg => pEval(ctx.bind(param, ty, arg), body)), IRType.Ptr)
-  case Term.App(func, arg) =>
-    val (fv, ft) = pEval(ctx, func)
-    val (av, at) = pEval(ctx, arg)
-    fv match
-      case IRVal.Lam(fn) => fn(av)
-      case _             => throw new Exception("app lhs is not a function")
-  case Term.Add(lhs, rhs) =>
-    val (lv, lt) = pEval(ctx, lhs)
-    val (rv, rt) = pEval(ctx, rhs)
-    if lt != IRType.I32 || rt != IRType.I32 then
-      throw new Exception("add non-numbers")
-    (lv, rv) match
-      case (IRVal.Num(a), IRVal.Num(b)) => (IRVal.Num(a + b), IRType.I32)
-      case _ =>
-        val name = fresh
-        push(IROp.Add(name, IRType.I32, lv, rv))
-        (IRVal.Var(name), IRType.I32)
-  case Term.Let(name, value, next) =>
-    val (vv, vt) = pEval(ctx, value)
-    pEval(ctx.bind(name, vt, vv), next)
-  case Term.Alt(lhs, rhs, x, y) =>
-    throw new Exception("control flow is not supported")
+def pEval(ctx: Ctx, term: Term, ops: IROps): (IRVal, IRType, IROps) =
+  term match
+
+    // 对输入操作单独使用一条指令
+    case Term.Inp =>
+      val name = fresh
+      (IRVal.Var(name), IRType.I32, ops.add(IROp.Inp(name)))
+
+    // 数字直接返回
+    case Term.Num(value) => (IRVal.Num(value), IRType.I32, ops)
+
+    // 变量要查表得到值
+    case Term.Var(name) => (ctx.valueOf(name), ctx.typeOf(name), ops)
+
+    // 函数收到值之后再 pEval，且继承 IROps，因为 inline
+    case Term.Lam(param, ty, body) =>
+      val f = (arg: IRVal, ops: IROps) =>
+        pEval(ctx.bind(param, ty, arg), body, ops)
+      (IRVal.Lam(f), IRType.Ptr, ops)
+
+    // 先求出函数和参数，然后直接传参
+    case Term.App(func, arg) =>
+      val (fv, ft, fop) = pEval(ctx, func, ops)
+      val (av, at, aop) = pEval(ctx, arg, fop)
+      fv match
+        case IRVal.Lam(fn) => fn(av, aop)
+        case _             => throw new Exception("app lhs is not a function")
+
+    // 加法，先求加法两边的值
+    case Term.Add(lhs, rhs) =>
+      val (lv, lt, lop) = pEval(ctx, lhs, ops)
+      val (rv, rt, rop) = pEval(ctx, rhs, lop)
+
+      // 希望这两个都是整数
+      if lt != IRType.I32 || rt != IRType.I32 then
+        throw new Exception("add non-numbers")
+      (lv, rv) match
+
+        // 如果两个都是数，就可以直接化简
+        case (IRVal.Num(a), IRVal.Num(b)) =>
+          (IRVal.Num(a + b), IRType.I32, rop)
+
+        // 否则新建一个变量存储这个加法成果
+        case _ =>
+          val name = fresh
+          val newOp = IROp.Add(name, lv, rv)
+          (IRVal.Var(name), IRType.I32, rop.add(newOp))
+
+    // 定义变量直接转移值
+    case Term.Let(name, value, next) =>
+      val (vv, vt, ops2) = pEval(ctx, value, ops)
+      pEval(ctx.bind(name, vt, vv), next, ops2)
+
+    // 选择分支，先求等式两边的值
+    case Term.Alt(lhs, rhs, x, y) =>
+      val (lv, lt, lop) = pEval(ctx, lhs, ops)
+      val (rv, rt, rop) = pEval(ctx, rhs, lop)
+
+      // 希望这两个值是整数
+      if lt != IRType.I32 || rt != IRType.I32 then
+        throw new Exception("compare non-numbers")
+      (lv, rv) match
+
+        // 两个值可以直接判断，就直接化简
+        case (IRVal.Num(a), IRVal.Num(b)) =>
+          if a == b
+          then pEval(ctx, x, rop)
+          else pEval(ctx, y, rop)
+
+        // 否则，考虑到两边在分支里面，要对 IROps 另起炉灶
+        case _ =>
+          val (xv, xt, xop) = pEval(ctx, x, IROps.empty)
+          val (yv, yt, yop) = pEval(ctx, y, IROps.empty)
+
+          // 希望这两个值类型相同
+          if xt != yt then throw new Exception("if cases type mismatch")
+
+          // 构造出 Alt 操作
+          val name = fresh
+          val xpk = IRPack(xv, xt, xop)
+          val ypk = IRPack(yv, yt, yop)
+          val newOp = IROp.Alt(name, lv, rv, xpk, ypk)
+          (IRVal.Var(name), xt, rop.add(newOp))
 
 // 编译结果输出
 
@@ -302,17 +376,19 @@ attributes #1 = { "frame-pointer"="all" "no-trapping-math"="true" "stack-protect
 
 def output(code: String) =
   val content = fileStart + code + fileEnd
-  val filePath = Paths.get("sample/fn.ll")
+  val filePath = Paths.get(s"sample/$fileName.ll")
   Files.write(filePath, content.getBytes)
 
 // 从这里开始运行
 
+val fileName = "if"
+
 @main def run() =
-  val src = Source.fromFile("sample/fn.silent")
+  val src = Source.fromFile(s"sample/$fileName.silent")
   val str = src.mkString
   src.close()
   term.run(str) match
     case Result.Fail => println("Parse failed")
     case Result.Success(res, rem) =>
-      val (rv, rt) = pEval(Ctx.empty, res)
-      output(opsStr + rv.print(rt))
+      val (rv, rt, ops) = pEval(Ctx.empty, res, IROps.empty)
+      output(ops.toString() + rv.print(rt))
