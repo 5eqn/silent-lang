@@ -1,5 +1,5 @@
-let a = _ in
+let a = input in
 let b = add(a, a) in
 let f = (x: int) => add(x, 1) in
 let five = app(f, 4) in
-app(f, add(add(b, b), five))
+print(app(f, add(add(b, b), five)))

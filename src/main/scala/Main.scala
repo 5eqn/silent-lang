@@ -11,8 +11,20 @@ def collect(pred: Char => Boolean, str: String, acc: String): (String, String) =
     case Some(hd) if pred(hd) => collect(pred, str.tail, acc + hd);
     case _                    => (acc, str)
 
-def keywords =
-  List("lam", "let", "in", "app", "add", "if", "then", "else", "int", "ptr")
+def keywords = List(
+  "lam",
+  "let",
+  "in",
+  "app",
+  "add",
+  "if",
+  "then",
+  "else",
+  "int",
+  "ptr",
+  "input",
+  "print"
+)
 
 // 处理结果
 
@@ -67,19 +79,11 @@ def ident = Parser(str =>
   else Result.Fail
 )
 
-def irtype = Parser(str =>
-  val (res, rem) = collect(isAlphabetic, str, "")
-  if res == "int"
-  then Result.Success(IRType.I32, rem)
-  else if res == "ptr"
-  then Result.Success(IRType.Ptr, rem)
-  else Result.Fail
-)
-
 // 编程语言的数据结构
 
 enum Term:
   case Inp
+  case Prt(arg: Term)
   case Num(value: Int)
   case Var(name: String)
   case Lam(param: String, ty: IRType, body: Term)
@@ -90,7 +94,7 @@ enum Term:
 
 // 让机器理解编程语言
 
-def inp = exact('_').map(_ => Term.Inp)
+def inp = exact("input").map(_ => Term.Inp)
 
 def pos = number.map(value => Term.Num(value))
 
@@ -101,11 +105,15 @@ def neg = for {
 
 def atom = ident.map(name => Term.Var(name))
 
+def irInt = exact("int").map(_ => IRType.I32)
+def irPtr = exact("ptr").map(_ => IRType.Ptr)
+def irType = irInt | irPtr
+
 def lam = for {
   _ <- exact('(')
   param <- ident
   _ <- exact(':')
-  ty <- irtype
+  ty <- irType
   _ <- exact(')')
   _ <- exact("=>")
   body <- term
@@ -129,6 +137,13 @@ def add = for {
   _ <- exact(')')
 } yield Term.Add(lhs, rhs)
 
+def prt = for {
+  _ <- exact("print")
+  _ <- exact('(')
+  arg <- term
+  _ <- exact(')')
+} yield Term.Prt(arg)
+
 def let = for {
   _ <- exact("let")
   name <- ident
@@ -149,7 +164,8 @@ def alt = for {
   y <- term
 } yield Term.Alt(lhs, rhs, x, y)
 
-def term: Parser[Term] = inp | pos | neg | atom | lam | app | add | let | alt
+def term: Parser[Term] =
+  inp | pos | neg | atom | lam | app | add | prt | let | alt
 
 // LLVM-IR 语法树
 
@@ -164,23 +180,23 @@ enum IRType:
 enum IRVal:
   case Num(value: Int)
   case Var(name: String)
-  case Lam(fn: (IRVal, IROps) => (IRVal, IRType, IROps))
+  case Lam(fn: (IRVal, IROps) => IRPack)
 
   override def toString() = this match
     case Num(value) => value.toString()
     case Var(name)  => s"%$name"
     case Lam(fn)    => throw new Exception("can't serialize function")
 
-  def print(ty: IRType) = s"  call void @print($ty noundef $this)"
-
 enum IROp:
   case Inp(res: String)
+  case Prt(arg: IRVal, ty: IRType)
   case Add(res: String, lhs: IRVal, rhs: IRVal)
   case Let(res: String, value: IRVal)
   case Alt(res: String, lhs: IRVal, rhs: IRVal, x: IRPack, y: IRPack)
 
   override def toString() = this match
     case Inp(res)           => s"  %$res = call i32 @input()"
+    case Prt(arg, ty)       => s"  call void @print($ty noundef $arg)"
     case Add(res, lhs, rhs) => s"  %$res = add nsw i32 $lhs, $rhs"
     case Let(res, value)    => s"  %$res = $value"
     case Alt(res, lhs, rhs, x, y) =>
@@ -214,6 +230,7 @@ object IROps:
 
 case class IRPack(value: IRVal, ty: IRType, ops: IROps):
   def store(res: String) = s"""$ops  store $ty $value, ptr %$res, align 4"""
+  override def toString() = ops.toString()
 
 // 新变量名生成器
 
@@ -237,99 +254,102 @@ object Ctx:
 
 // 部分求值
 
-def pEval(ctx: Ctx, term: Term, ops: IROps): (IRVal, IRType, IROps) =
-  term match
+def pEval(ctx: Ctx, term: Term, ops: IROps): IRPack = term match
 
-    // 对输入操作单独使用一条指令
-    case Term.Inp =>
-      val name = fresh
-      (IRVal.Var(name), IRType.I32, ops.add(IROp.Inp(name)))
+  // 对输入操作单独使用一条指令
+  case Term.Inp =>
+    val name = fresh
+    IRPack(IRVal.Var(name), IRType.I32, ops.add(IROp.Inp(name)))
 
-    // 数字直接返回
-    case Term.Num(value) => (IRVal.Num(value), IRType.I32, ops)
+  // 对输出操作单独使用一条指令
+  case Term.Prt(arg) =>
+    val IRPack(av, at, aop) = pEval(ctx, arg, ops)
+    IRPack(av, at, aop.add(IROp.Prt(av, at)))
 
-    // 变量要查表得到值
-    case Term.Var(name) => (ctx.valueOf(name), ctx.typeOf(name), ops)
+  // 数字直接返回
+  case Term.Num(value) => IRPack(IRVal.Num(value), IRType.I32, ops)
 
-    // 函数收到值之后再 pEval，且继承 IROps，因为 inline
-    case Term.Lam(param, ty, body) =>
-      val f = (arg: IRVal, ops: IROps) =>
-        pEval(ctx.bind(param, ty, arg), body, ops)
-      (IRVal.Lam(f), IRType.Ptr, ops)
+  // 变量要查表得到值
+  case Term.Var(name) => IRPack(ctx.valueOf(name), ctx.typeOf(name), ops)
 
-    // 先求出函数和参数，然后直接传参
-    case Term.App(func, arg) =>
-      val (fv, ft, fop) = pEval(ctx, func, ops)
-      val (av, at, aop) = pEval(ctx, arg, fop)
-      fv match
-        case IRVal.Lam(fn) => fn(av, aop)
-        case _             => throw new Exception("app lhs is not a function")
+  // 函数收到值之后再 pEval，且继承 IROps，因为 inline
+  case Term.Lam(param, ty, body) =>
+    val f = (arg: IRVal, ops: IROps) =>
+      pEval(ctx.bind(param, ty, arg), body, ops)
+    IRPack(IRVal.Lam(f), IRType.Ptr, ops)
 
-    // 加法，先求加法两边的值
-    case Term.Add(lhs, rhs) =>
-      val (lv, lt, lop) = pEval(ctx, lhs, ops)
-      val (rv, rt, rop) = pEval(ctx, rhs, lop)
+  // 先求出函数和参数，然后直接传参
+  case Term.App(func, arg) =>
+    val IRPack(fv, ft, fop) = pEval(ctx, func, ops)
+    val IRPack(av, at, aop) = pEval(ctx, arg, fop)
+    fv match
+      case IRVal.Lam(fn) => fn(av, aop)
+      case _             => throw new Exception("app lhs is not a function")
 
-      // 希望这两个都是整数
-      if lt != IRType.I32 || rt != IRType.I32 then
-        throw new Exception("add non-numbers")
-      (lv, rv) match
+  // 加法，先求加法两边的值
+  case Term.Add(lhs, rhs) =>
+    val IRPack(lv, lt, lop) = pEval(ctx, lhs, ops)
+    val IRPack(rv, rt, rop) = pEval(ctx, rhs, lop)
 
-        // 如果两个都是数，就可以直接化简
-        case (IRVal.Num(a), IRVal.Num(b)) =>
-          (IRVal.Num(a + b), IRType.I32, rop)
+    // 希望这两个都是整数
+    if lt != IRType.I32 || rt != IRType.I32 then
+      throw new Exception("add non-numbers")
+    (lv, rv) match
 
-        // 否则新建一个变量存储这个加法成果
-        case _ =>
-          val name = fresh
-          val newOp = IROp.Add(name, lv, rv)
-          (IRVal.Var(name), IRType.I32, rop.add(newOp))
+      // 如果两个都是数，就可以直接化简
+      case (IRVal.Num(a), IRVal.Num(b)) =>
+        IRPack(IRVal.Num(a + b), IRType.I32, rop)
 
-    // 定义变量直接转移值
-    case Term.Let(name, value, next) =>
-      val (vv, vt, ops2) = pEval(ctx, value, ops)
-      pEval(ctx.bind(name, vt, vv), next, ops2)
+      // 否则新建一个变量存储这个加法成果
+      case _ =>
+        val name = fresh
+        val newOp = IROp.Add(name, lv, rv)
+        IRPack(IRVal.Var(name), IRType.I32, rop.add(newOp))
 
-    // 选择分支，先求等式两边的值
-    case Term.Alt(lhs, rhs, x, y) =>
-      val (lv, lt, lop) = pEval(ctx, lhs, ops)
-      val (rv, rt, rop) = pEval(ctx, rhs, lop)
+  // 定义变量直接转移值
+  case Term.Let(name, value, next) =>
+    val IRPack(vv, vt, ops2) = pEval(ctx, value, ops)
+    pEval(ctx.bind(name, vt, vv), next, ops2)
 
-      // 希望这两个值是整数
-      if lt != IRType.I32 || rt != IRType.I32 then
-        throw new Exception("compare non-numbers")
-      (lv, rv) match
+  // 选择分支，先求等式两边的值
+  case Term.Alt(lhs, rhs, x, y) =>
+    val IRPack(lv, lt, lop) = pEval(ctx, lhs, ops)
+    val IRPack(rv, rt, rop) = pEval(ctx, rhs, lop)
 
-        // 两个值可以直接判断，就直接化简
-        case (IRVal.Num(a), IRVal.Num(b)) =>
-          if a == b
-          then pEval(ctx, x, rop)
-          else pEval(ctx, y, rop)
+    // 希望这两个值是整数
+    if lt != IRType.I32 || rt != IRType.I32 then
+      throw new Exception("compare non-numbers")
+    (lv, rv) match
 
-        // 否则，考虑到两边在分支里面，要对 IROps 另起炉灶
-        case _ =>
-          val (xv, xt, xop) = pEval(ctx, x, IROps.empty)
-          val (yv, yt, yop) = pEval(ctx, y, IROps.empty)
+      // 两个值可以直接判断，就直接化简
+      case (IRVal.Num(a), IRVal.Num(b)) =>
+        if a == b
+        then pEval(ctx, x, rop)
+        else pEval(ctx, y, rop)
 
-          // 希望这两个值类型相同
-          if xt != yt then throw new Exception("if cases type mismatch")
+      // 否则，考虑到两边在分支里面，要对 IROps 另起炉灶
+      case _ =>
+        val IRPack(xv, xt, xop) = pEval(ctx, x, IROps.empty)
+        val IRPack(yv, yt, yop) = pEval(ctx, y, IROps.empty)
 
-          // 构造出 Alt 操作
-          val name = fresh
-          val xpk = IRPack(xv, xt, xop)
-          val ypk = IRPack(yv, yt, yop)
-          val newOp = IROp.Alt(name, lv, rv, xpk, ypk)
-          (IRVal.Var(name), xt, rop.add(newOp))
+        // 希望这两个值类型相同
+        if xt != yt then throw new Exception("if cases type mismatch")
+
+        // 构造出 Alt 操作
+        val name = fresh
+        val xpk = IRPack(xv, xt, xop)
+        val ypk = IRPack(yv, yt, yop)
+        val newOp = IROp.Alt(name, lv, rv, xpk, ypk)
+        IRPack(IRVal.Var(name), xt, rop.add(newOp))
 
 // 编译结果输出
 
-def fileStart = """
-; ModuleID = 'main.c'
-source_filename = "main.c"
-target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
+def fileStart =
+  """target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-pc-linux-gnu"
 
 @.str = private unnamed_addr constant [3 x i8] c"%d\00", align 1
+@.str.1 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 
 ; Function Attrs: noinline nounwind optnone sspstrong uwtable
 define dso_local i32 @input() #0 {
@@ -346,7 +366,7 @@ define dso_local void @print(i32 noundef %0) #0 {
   %2 = alloca i32, align 4
   store i32 %0, ptr %2, align 4
   %3 = load i32, ptr %2, align 4
-  %4 = call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %3)
+  %4 = call i32 (ptr, ...) @printf(ptr noundef @.str.1, i32 noundef %3)
   ret void
 }
 
@@ -356,8 +376,7 @@ declare i32 @printf(ptr noundef, ...) #1
 define dso_local i32 @main() #0 {
 """
 
-def fileEnd = """
-  ret i32 0
+def fileEnd = """  ret i32 0
 }
 
 attributes #0 = { noinline nounwind optnone sspstrong uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
@@ -381,7 +400,7 @@ def output(code: String) =
 
 // 从这里开始运行
 
-val fileName = "if"
+val fileName = "print"
 
 @main def run() =
   val src = Source.fromFile(s"sample/$fileName.silent")
@@ -390,5 +409,5 @@ val fileName = "if"
   term.run(str) match
     case Result.Fail => println("Parse failed")
     case Result.Success(res, rem) =>
-      val (rv, rt, ops) = pEval(Ctx.empty, res, IROps.empty)
-      output(ops.toString() + rv.print(rt))
+      val pk = pEval(Ctx.empty, res, IROps.empty)
+      output(pk.toString())

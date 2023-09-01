@@ -1,0 +1,5 @@
+let a = input in
+let b = print(add(a, a)) in
+let f = (x: int) => print(add(x, 1)) in
+let five = print(app(f, 4)) in
+print(app(f, add(add(b, b), five)))
