@@ -1,5 +1,5 @@
-let swap = (f: ptr) => (x: int) => (y: int) => app(app(f, y), x) in
+let swap = (f: ptr) => (x: int) => (y: int) => f(y)(x) in
 let test = (x: int) => (y: int) => x in
 let x = input in
 let y = input in
-print(app(app(app(swap, test), x), y))
+print(swap(test)(x)(y))

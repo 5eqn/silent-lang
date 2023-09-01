@@ -8,5 +8,5 @@ Silently compiles FP to LLVM-IR.
 - [x] input
 - [x] print
 - [x] control flow
-- [ ] left-rec syntax
+- [x] left-rec syntax
 - [ ] vector
