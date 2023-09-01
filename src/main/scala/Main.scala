@@ -16,7 +16,6 @@ def keywords = List(
   "let",
   "in",
   "app",
-  "add",
   "if",
   "then",
   "else",
@@ -52,6 +51,8 @@ case class Parser[A](run: String => Result[A]):
   )
 
 // 一些分析函数
+
+def success[A](res: A) = Parser(str => Result.Success(res, str))
 
 def exact(exp: Char) = Parser(str =>
   str.headOption match
@@ -103,7 +104,15 @@ def neg = for {
   value <- number
 } yield Term.Num(-value)
 
-def atom = ident.map(name => Term.Var(name))
+def vrb = ident.map(name => Term.Var(name))
+
+def brk = for {
+  _ <- exact('(')
+  tm <- term
+  _ <- exact(')')
+} yield tm
+
+def atm = inp | pos | neg | vrb | brk | prt
 
 def irInt = exact("int").map(_ => IRType.I32)
 def irPtr = exact("ptr").map(_ => IRType.Ptr)
@@ -120,22 +129,27 @@ def lam = for {
 } yield Term.Lam(param, ty, body)
 
 def app = for {
-  _ <- exact("app")
-  _ <- exact('(')
-  func <- term
-  _ <- exact(',')
-  arg <- term
-  _ <- exact(')')
-} yield Term.App(func, arg)
+  lhs <- atm
+  res <- appRest(lhs)
+} yield res
 
-def add = for {
-  _ <- exact("add")
+def appRest(lhs: Term): Parser[Term] = (for {
   _ <- exact('(')
-  lhs <- term
-  _ <- exact(',')
   rhs <- term
   _ <- exact(')')
-} yield Term.Add(lhs, rhs)
+  res <- appRest(Term.App(lhs, rhs))
+} yield res) | success(lhs)
+
+def add = for {
+  lhs <- app
+  res <- addRest(lhs)
+} yield res
+
+def addRest(lhs: Term): Parser[Term] = (for {
+  _ <- exact('+')
+  rhs <- app
+  res <- addRest(Term.Add(lhs, rhs))
+} yield res) | success(lhs)
 
 def prt = for {
   _ <- exact("print")
@@ -164,8 +178,7 @@ def alt = for {
   y <- term
 } yield Term.Alt(lhs, rhs, x, y)
 
-def term: Parser[Term] =
-  inp | pos | neg | atom | lam | app | add | prt | let | alt
+def term: Parser[Term] = lam | add | let | alt
 
 // LLVM-IR 语法树
 
@@ -400,7 +413,7 @@ def output(code: String) =
 
 // 从这里开始运行
 
-val fileName = "print"
+val fileName = "fn"
 
 @main def run() =
   val src = Source.fromFile(s"sample/$fileName.silent")
