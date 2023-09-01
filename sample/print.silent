@@ -2,4 +2,4 @@ let a = input in
 let b = print(a + a) in
 let f = (x: int) => print(x + 1) in
 let five = print(f(4)) in
-print(f(b + b + 5))
+print(f(b + b + five))
