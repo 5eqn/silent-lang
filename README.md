@@ -6,5 +6,7 @@ Silently compiles FP to LLVM-IR.
 
 - [x] partial evaluation
 - [x] input
-- [ ] print
+- [x] print
 - [x] control flow
+- [ ] left-rec syntax
+- [ ] vector
