@@ -90,7 +90,7 @@ def pEval(env: Env, term: Term): IRPack = term match
         then pEval(env, x).prepend(ops)
         else pEval(env, y).prepend(ops)
 
-      // 否则，考虑到两边在分支里面，要对 IROps 另起炉灶
+      // 否则两个分支都要计算
       case _ =>
         val IRPack(xv, xop) = pEval(env, x)
         val IRPack(yv, yop) = pEval(env, y)
