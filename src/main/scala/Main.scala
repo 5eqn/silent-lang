@@ -247,24 +247,20 @@ enum IROp:
     case Add(res, lhs, rhs) => s"  %$res = add nsw i32 $lhs, $rhs"
     case Let(res, value)    => s"  %$res = $value"
     case Alt(res, lhs, rhs, x, y) =>
-      val flag = fresh
-      val ptr = fresh
-      val label1 = fresh
-      val label2 = fresh
-      val label3 = fresh
+      val (flag, ptr, l1, l2, l3) = (fresh, fresh, fresh, fresh, fresh)
       s"""  %$flag = icmp eq i32 $lhs, $rhs
   %$ptr = alloca i32, align 4
-  br i1 %$flag, label %$label1, label %$label2
+  br i1 %$flag, label %$l1, label %$l2
 
-$label1:
+$l1:
 ${x.store(ptr)}
-  br label %$label3
+  br label %$l3
 
-$label2:
+$l2:
 ${y.store(ptr)}
-  br label %$label3
+  br label %$l3
 
-$label3:
+$l3:
   %$res = load i32, ptr %$ptr, align 4"""
 
 case class IROps(ops: List[IROp]):
