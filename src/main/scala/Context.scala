@@ -6,14 +6,24 @@ def fresh =
   counter += 1
   s"x$counter"
 
-// 语境
+// 语境，存储变量名到类型的对应
 
-case class Ctx(types: Map[String, IRType], values: Map[String, IRVal]):
-  def bind(name: String, ty: IRType, value: IRVal) =
-    Ctx(types + (name -> ty), values + (name -> value))
-  def typeOf(name: String) = types(name)
-  def valueOf(name: String) = values(name)
+case class Ctx(types: Map[String, Type]):
+  def bind(name: String, ty: Type) =
+    Ctx(types + (name -> ty))
+  def apply(name: String) = types(name)
 
 object Ctx:
   def empty =
-    Ctx(Map("input" -> IRType.I32), Map("input" -> IRVal.Var("input")))
+    Ctx(Map("input" -> Type.I32))
+
+// 环境，存储变量名到值的对应
+
+case class Env(values: Map[String, IRVal]):
+  def bind(name: String, value: IRVal) =
+    Env(values + (name -> value))
+  def apply(name: String) = values(name)
+
+object Env:
+  def empty =
+    Env(Map("input" -> IRVal.Var("input")))

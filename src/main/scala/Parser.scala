@@ -78,18 +78,29 @@ def ident = Parser(str =>
   else Result.Fail
 )
 
-// 高结合性语法
+def some[A](p: Parser[A]) = for {
+  lhs <- p
+  res <- someRest(List(lhs), p)
+} yield res
 
-def inp = exact("input").map(_ => Term.Inp)
+def someRest[A](lhs: List[A], p: Parser[A]): Parser[List[A]] = (for {
+  _ <- exact(',')
+  rhs <- p
+  res <- someRest(rhs :: lhs, p)
+} yield res) | success(lhs)
 
-def pos = number.map(Term.Num(_))
+// 原子操作符
+
+def inp = exact("input").map(_ => Raw.Inp)
+
+def pos = number.map(Raw.Num(_))
 
 def neg = for {
   _ <- exact('-')
   value <- number
-} yield Term.Num(-value)
+} yield Raw.Num(-value)
 
-def vrb = ident.map(Term.Var(_))
+def vrb = ident.map(Raw.Var(_))
 
 def brk = for {
   _ <- exact('(')
@@ -102,65 +113,71 @@ def prt = for {
   _ <- exact('(')
   arg <- term
   _ <- exact(')')
-} yield Term.Prt(arg)
+} yield Raw.Prt(arg)
 
 def atm = inp | pos | neg | vrb | brk | prt
 
-// 左递归语法
-
-def some[A](p: Parser[A]) = for {
-  lhs <- p
-  res <- someRest(List(lhs), p)
-} yield res
-
-def someRest[A](lhs: List[A], p: Parser[A]): Parser[List[A]] = (for {
-  _ <- exact(',')
-  rhs <- p
-  res <- someRest(rhs :: lhs, p)
-} yield res) | success(lhs)
+// 函数应用
 
 def app = for {
   lhs <- atm
   res <- appRest(lhs)
 } yield res
 
-def appRest(lhs: Term): Parser[Term] = (for {
+def appRest(lhs: Raw): Parser[Raw] = (for {
   _ <- exact('(')
   rhs <- term
   _ <- exact(')')
-  res <- appRest(Term.App(lhs, rhs))
+  res <- appRest(Raw.App(lhs, rhs))
 } yield res) | success(lhs)
+
+// 加法
 
 def add = for {
   lhs <- app
   res <- addRest(lhs)
 } yield res
 
-def addRest(lhs: Term): Parser[Term] = (for {
+def addRest(lhs: Raw): Parser[Raw] = (for {
   _ <- exact('+')
   rhs <- app
-  res <- addRest(Term.Add(lhs, rhs))
+  res <- addRest(Raw.Add(lhs, rhs))
 } yield res) | success(lhs)
 
-def tup = some(add).map(ls => if ls.length == 1 then ls(0) else Term.Tup(ls))
+def tup = some(add).map(ls => if ls.length == 1 then ls(0) else Raw.Tup(ls))
 
-// 外层语法
+// 类型
 
-def irInt = exact("int").map(_ => IRType.I32)
-def irPtr = exact("ptr").map(_ => IRType.Ptr)
-def irOne = irInt | irPtr
-def irType =
-  some(irOne).map(ls => if ls.length == 1 then ls(0) else IRType.Tup(ls))
+def tyInt = exact("int").map(_ => Type.I32)
+
+def tyAtom = tyInt
+
+def tyFun = for {
+  lhs <- tyAtom
+  res <- tyFunRest(lhs)
+} yield res
+
+def tyFunRest(lhs: Type): Parser[Type] = (for {
+  _ <- exact("->")
+  rhs <- tyFun
+} yield Type.Fun(lhs, rhs)) | success(lhs)
+
+def tyAny =
+  some(tyFun).map(ls => if ls.length == 1 then ls(0) else Type.Tup(ls))
+
+// 匿名函数
 
 def lam = for {
   _ <- exact('(')
   param <- ident
   _ <- exact(':')
-  ty <- irType
+  ty <- tyAny
   _ <- exact(')')
   _ <- exact("=>")
   body <- term
-} yield Term.Lam(param, ty, body)
+} yield Raw.Lam(param, ty, body)
+
+// 赋值
 
 def let = for {
   _ <- exact("let")
@@ -169,7 +186,9 @@ def let = for {
   value <- term
   _ <- exact("in")
   next <- term
-} yield Term.Let(name, value, next)
+} yield Raw.Let(name, value, next)
+
+// 递归
 
 def rec = for {
   _ <- exact("let")
@@ -178,7 +197,9 @@ def rec = for {
   value <- term
   _ <- exact("in")
   next <- term
-} yield Term.Let(name, value, next)
+} yield Raw.Let(name, value, next)
+
+// 选择
 
 def alt = for {
   _ <- exact("if")
@@ -189,6 +210,8 @@ def alt = for {
   x <- term
   _ <- exact("else")
   y <- term
-} yield Term.Alt(lhs, rhs, x, y)
+} yield Raw.Alt(lhs, rhs, x, y)
 
-def term: Parser[Term] = tup | lam | let | alt
+// 整个表达式
+
+def term: Parser[Raw] = tup | lam | let | rec | alt

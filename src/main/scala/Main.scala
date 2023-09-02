@@ -2,7 +2,7 @@ import scala.io.Source
 
 // 从这里开始运行
 
-val fileName = "tuple"
+val fileName = "fn"
 
 @main def run() =
   val src = Source.fromFile(s"sample/$fileName.silent")
@@ -11,5 +11,7 @@ val fileName = "tuple"
   term.run(str) match
     case Result.Fail => println("Parse failed")
     case Result.Success(res, rem) =>
-      val pk = pEval(Ctx.empty, res, IROps.empty)
+      val TmPack(tm, ty) = infer(Ctx.empty, res)
+      val pk = pEval(Env.empty, tm)
       output(s"$pk", fileName)
+      println("Compilation succeeds!")

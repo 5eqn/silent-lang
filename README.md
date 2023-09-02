@@ -10,7 +10,9 @@ English version: TODO
 
 [Model.scala](src/main/scala/Model.scala) 存储了 silent-lang 和 LLVM-IR 的语法树，其中 LLVM-IR 的语法树比较有意思：IROps 其实相当于 letlist，用于记住已算出的变量的同时，使得编译结果可以用线性的「操作过程」表述出来。
 
-[Evaluation.scala](src/main/scala/Evaluation.scala) 比较重要，在进行部分求值的时候同时把 silent-lang 语法树转化成 LLVM-IR 语法树，注释也较多。
+[Evaluation.scala](src/main/scala/Evaluation.scala) 比较重要，在进行部分求值的时候同时把 silent-lang 里语法树转化成 LLVM-IR 语法树，注释也较多。
+
+[Elaboration.scala](src/main/scala/Elaboration.scala) 暂时用于进行类型检查，同时把 silent-lang 表语法树转化成里语法数。后续该模块还会用于推导置空的类型。
 
 虽然 Scala 有 Parsec 库，但我还是手动实现了一个 [Parser.scala](src/main/scala/Parser.scala)，来加深对 Parsec 的理解，同时让该语言的「极简」名副其实（没有非必要的调库）。
 
@@ -278,7 +280,7 @@ let c[i of n + 1] = print(b[i])
 - [x] print
 - [x] control flow
 - [x] left-rec syntax
-- [ ] typecheck for function
+- [x] typecheck for function
 - [ ] pretty errors
 - [ ] tail-rec
 - [x] tuple
