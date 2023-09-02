@@ -1,6 +1,10 @@
 ## silent-lang
 
-Silently compiles FP to LLVM-IR.
+English version: TODO
+
+寂语言，专为算法题设计的函数式编程语言，编译到 LLVM-IR。
+
+名字来源：「杀戮尖塔」游戏角色，寂静猎手。
 
 ### showcase
 
@@ -143,6 +147,8 @@ let x, y, i = 1, 1, 2 rec
 
 print(y)
 ```
+
+`nope` 关键字名字来源：「炸弹猫咪」桌游卡牌，否决。
 
 快速幂：
 
