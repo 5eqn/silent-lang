@@ -14,6 +14,7 @@ def collect(pred: Char => Boolean, str: String, acc: String): (String, String) =
 def keywords = List(
   "lam",
   "let",
+  "rec",
   "in",
   "app",
   "if",
@@ -90,21 +91,22 @@ enum Term:
   case Lam(param: String, ty: IRType, body: Term)
   case App(func: Term, arg: Term)
   case Add(lhs: Term, rhs: Term)
-  case Let(name: String, value: Term, next: Term)
+  case Let(name: List[String], value: Term, next: Term)
   case Alt(lhs: Term, rhs: Term, x: Term, y: Term)
+  case Tup(ls: List[Term])
 
-// 让机器理解编程语言
+// 高结合性语法
 
 def inp = exact("input").map(_ => Term.Inp)
 
-def pos = number.map(value => Term.Num(value))
+def pos = number.map(Term.Num(_))
 
 def neg = for {
   _ <- exact('-')
   value <- number
 } yield Term.Num(-value)
 
-def vrb = ident.map(name => Term.Var(name))
+def vrb = ident.map(Term.Var(_))
 
 def brk = for {
   _ <- exact('(')
@@ -112,21 +114,27 @@ def brk = for {
   _ <- exact(')')
 } yield tm
 
+def prt = for {
+  _ <- exact("print")
+  _ <- exact('(')
+  arg <- term
+  _ <- exact(')')
+} yield Term.Prt(arg)
+
 def atm = inp | pos | neg | vrb | brk | prt
 
-def irInt = exact("int").map(_ => IRType.I32)
-def irPtr = exact("ptr").map(_ => IRType.Ptr)
-def irType = irInt | irPtr
+// 左递归语法
 
-def lam = for {
-  _ <- exact('(')
-  param <- ident
-  _ <- exact(':')
-  ty <- irType
-  _ <- exact(')')
-  _ <- exact("=>")
-  body <- term
-} yield Term.Lam(param, ty, body)
+def some[A](p: Parser[A]) = for {
+  lhs <- p
+  res <- someRest(List(lhs), p)
+} yield res
+
+def someRest[A](lhs: List[A], p: Parser[A]): Parser[List[A]] = (for {
+  _ <- exact(',')
+  rhs <- p
+  res <- someRest(rhs :: lhs, p)
+} yield res) | success(lhs)
 
 def app = for {
   lhs <- atm
@@ -151,16 +159,38 @@ def addRest(lhs: Term): Parser[Term] = (for {
   res <- addRest(Term.Add(lhs, rhs))
 } yield res) | success(lhs)
 
-def prt = for {
-  _ <- exact("print")
+def tup = some(add).map(ls => if ls.length == 1 then ls(0) else Term.Tup(ls))
+
+// 外层语法
+
+def irInt = exact("int").map(_ => IRType.I32)
+def irPtr = exact("ptr").map(_ => IRType.Ptr)
+def irOne = irInt | irPtr
+def irType =
+  some(irOne).map(ls => if ls.length == 1 then ls(0) else IRType.Tup(ls))
+
+def lam = for {
   _ <- exact('(')
-  arg <- term
+  param <- ident
+  _ <- exact(':')
+  ty <- irType
   _ <- exact(')')
-} yield Term.Prt(arg)
+  _ <- exact("=>")
+  body <- term
+} yield Term.Lam(param, ty, body)
 
 def let = for {
   _ <- exact("let")
-  name <- ident
+  name <- some(ident)
+  _ <- exact('=')
+  value <- term
+  _ <- exact("in")
+  next <- term
+} yield Term.Let(name, value, next)
+
+def rec = for {
+  _ <- exact("let")
+  name <- some(ident)
   _ <- exact('=')
   value <- term
   _ <- exact("in")
@@ -178,26 +208,30 @@ def alt = for {
   y <- term
 } yield Term.Alt(lhs, rhs, x, y)
 
-def term: Parser[Term] = lam | add | let | alt
+def term: Parser[Term] = tup | lam | let | alt
 
 // LLVM-IR 语法树
 
 enum IRType:
   case I32
   case Ptr
+  case Tup(ls: List[IRType])
 
   override def toString() = this match
-    case I32 => "i32"
-    case Ptr => "ptr"
+    case I32     => "i32"
+    case Ptr     => "ptr"
+    case Tup(ls) => throw new Exception("can't serialize tuple type")
 
 enum IRVal:
   case Num(value: Int)
   case Var(name: String)
+  case Tup(ls: List[IRVal])
   case Lam(fn: (IRVal, IROps) => IRPack)
 
   override def toString() = this match
     case Num(value) => s"$value"
     case Var(name)  => s"%$name"
+    case Tup(ls)    => throw new Exception("can't serialize tuple")
     case Lam(fn)    => throw new Exception("can't serialize function")
 
 enum IROp:
@@ -321,8 +355,31 @@ def pEval(ctx: Ctx, term: Term, ops: IROps): IRPack = term match
 
   // 定义变量直接转移值
   case Term.Let(name, value, next) =>
-    val IRPack(vv, vt, ops2) = pEval(ctx, value, ops)
-    pEval(ctx.bind(name, vt, vv), next, ops2)
+    val IRPack(vv, vt, vop) = pEval(ctx, value, ops)
+    (name.length, vv, vt) match
+
+      // 在 let a, b = c, d 中，希望左右一样多
+      case (len, IRVal.Tup(vls), IRType.Tup(tls)) if len == vls.length =>
+        val ls = vls.zip(tls)
+
+        // 从前往后绑定变量的值
+        val c = name
+          .zip(ls)
+          .foldRight(ctx)((pair, c) =>
+            val (n, (vv, vt)) = pair
+            c.bind(n, vt, vv)
+          )
+
+        // 继续求值
+        pEval(c, next, vop)
+
+      // 在 let pair = 1, 2 中，直接把 (1, 2) 绑定到 pair 上
+      case (1, _, _) =>
+        val c = ctx.bind(name(0), vt, vv)
+
+        // 继续求值
+        pEval(c, next, vop)
+      case _ => throw new Exception("let spine length mismatch")
 
   // 选择分支，先求等式两边的值
   case Term.Alt(lhs, rhs, x, y) =>
@@ -354,6 +411,16 @@ def pEval(ctx: Ctx, term: Term, ops: IROps): IRPack = term match
         val ypk = IRPack(yv, yt, yop)
         val newOp = IROp.Alt(name, lv, rv, xpk, ypk)
         IRPack(IRVal.Var(name), xt, rop.add(newOp))
+
+  // 元组
+  case Term.Tup(ls) =>
+    val (v, t, op) =
+      ls.foldRight((List[IRVal](), List[IRType](), ops))((tm, pk) =>
+        val (pv, pt, pop) = pk
+        val IRPack(tv, tt, top) = pEval(ctx, tm, pop)
+        (tv :: pv, tt :: pt, top)
+      )
+    IRPack(IRVal.Tup(v), IRType.Tup(t), op)
 
 // 编译结果输出
 
@@ -413,7 +480,7 @@ def output(code: String) =
 
 // 从这里开始运行
 
-val fileName = "fn"
+val fileName = "tuple"
 
 @main def run() =
   val src = Source.fromFile(s"sample/$fileName.silent")

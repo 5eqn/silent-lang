@@ -1,0 +1,7 @@
+let a, b = 3, input in
+let c, d = input, 4 in
+let pair = 1, 1 in
+let add = (p: int, int) =>
+  let x, y = p in
+  x + y in
+print(add(pair) + a + d + c + b)
