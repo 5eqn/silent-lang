@@ -84,6 +84,53 @@ x13:
 }
 ```
 
+#### 元组
+
+对元组可以整很多花样，比如多重赋值：
+
+```
+let a, b = 3, input in
+let c, d = input, 4 in
+```
+
+装包：
+
+```
+let pair = 1, 1 in
+```
+
+接受元组作为匿名函数的参数：
+
+```
+let add = (p: int, int) =>
+```
+
+解包：
+
+```
+  let x, y = p in
+  x + y in
+```
+
+还需要能对元组进行部分求值：
+
+```
+print(add(pair) + a + d + c + b)
+```
+
+silent-lang 可以处理这些！上面的代码会被编译成：
+
+```
+define dso_local i32 @main() #0 {
+  %x1 = call i32 @input()
+  %x2 = call i32 @input()
+  %x3 = add nsw i32 9, %x2
+  %x4 = add nsw i32 %x3, %x1
+  call void @print(i32 noundef %x4)
+  ret i32 0
+}
+```
+
 #### 数组和递归（WIP）
 
 斐波那契数列：
@@ -218,6 +265,6 @@ let c[i of n + 1] = print(b[i])
 - [x] control flow
 - [x] left-rec syntax
 - [ ] tail-rec
-- [ ] tuple
+- [x] tuple
 - [ ] vector
 - [ ] string
