@@ -6,17 +6,17 @@ English version: TODO
 
 名字来源：「杀戮尖塔」游戏角色，寂静猎手。
 
-### read guide
+### 代码阅读指南
 
-[Model.scala](src/main/scala/Model.scala) 存储了 silent-lang 和 LLVM-IR 的语法树，其中 LLVM-IR 的语法树比较有意思：IROps 其实相当于 letlist，用于记住已算出的变量的同时，使得编译结果可以用线性的「操作过程」表述出来。
-
-[Evaluation.scala](src/main/scala/Evaluation.scala) 比较重要，在进行部分求值的时候同时把 silent-lang 里语法树转化成 LLVM-IR 语法树，注释也较多。
+[Model.scala](src/main/scala/Model.scala) 存储了 silent-lang 和 LLVM-IR 的语法树，其中 LLVM-IR 的语法树比较有意思：IROps 用于记住已算出的变量的同时，使得编译结果可以用线性的「操作过程」表述出来。
 
 [Elaboration.scala](src/main/scala/Elaboration.scala) 暂时用于进行类型检查，同时把 silent-lang 表语法树转化成里语法树。后续该模块还会用于推导置空的类型。
 
+[Evaluation.scala](src/main/scala/Evaluation.scala) 比较重要，在进行部分求值的时候同时把 silent-lang 里语法树转化成 LLVM-IR 语法树，注释也较多。
+
 虽然 Scala 有 Parsec 库，但我还是手动实现了一个 [Parser.scala](src/main/scala/Parser.scala)，来加深对 Parsec 的理解，同时让该语言的「极简」名副其实（没有非必要的调库）。
 
-### showcase
+### 样例展示
 
 参见 [samples](sample/)。
 
