@@ -196,7 +196,7 @@ enum IRVal:
   case Lam(fn: (IRVal, IROps) => IRPack)
 
   override def toString() = this match
-    case Num(value) => value.toString()
+    case Num(value) => s"$value"
     case Var(name)  => s"%$name"
     case Lam(fn)    => throw new Exception("can't serialize function")
 
@@ -236,14 +236,14 @@ $label3:
 case class IROps(ops: List[IROp]):
   def add(irop: IROp) = IROps(irop :: ops)
   override def toString() =
-    ops.reverse.map(op => op.toString() + "\n").mkString("")
+    ops.reverse.map(op => s"$op\n").mkString("")
 
 object IROps:
   def empty = IROps(List())
 
 case class IRPack(value: IRVal, ty: IRType, ops: IROps):
   def store(res: String) = s"""$ops  store $ty $value, ptr %$res, align 4"""
-  override def toString() = ops.toString()
+  override def toString() = s"$ops"
 
 // 新变量名生成器
 
@@ -423,4 +423,4 @@ val fileName = "fn"
     case Result.Fail => println("Parse failed")
     case Result.Success(res, rem) =>
       val pk = pEval(Ctx.empty, res, IROps.empty)
-      output(pk.toString())
+      output(s"$pk")
