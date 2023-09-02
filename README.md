@@ -25,7 +25,7 @@ English version: TODO
 下面是一段充斥着高阶函数的代码：
 
 ```
-let swap = (f: ptr) => (x: int) => (y: int) => f(y)(x)
+let swap = (f: int -> int -> int) => (x: int) => (y: int) => f(y)(x)
 let test = (x: int) => (y: int) => x
 let x = input
 let y = input
