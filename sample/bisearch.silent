@@ -1,0 +1,16 @@
+let pow = (x: int) => (y: int) =>
+  let a, p, r = x, y, 1 rec
+    if p == 0 then nope else
+    let next = if p & 1 > 0 then r * a else r in
+    a * a, p / 2, next in
+  r in
+
+let p, n = input, input in
+let l, u = 0, 100 rec
+  if l + 1 == u then nope else
+  let mid = (l + u) / 2 in
+  if pow(mid)(p) > n
+  then l, mid
+  else mid, u in
+
+print(l)

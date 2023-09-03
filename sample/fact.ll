@@ -28,39 +28,42 @@ declare i32 @printf(ptr noundef, ...) #1
 ; Function Attrs: noinline nounwind optnone sspstrong uwtable
 define dso_local i32 @main() #0 {
   %x1 = call i32 @input()
-  %x2 = icmp eq i32 %x1, 1
   %x6 = alloca i32, align 4
-  br i1 %x2, label %x8, label %x9
+  %x7 = alloca i32, align 4
+
+  store i32 1, ptr %x6, align 4
+  store i32 1, ptr %x7, align 4
+  br label %x8
 
 x8:
-
-  store i32 114, ptr %x6, align 4
-  br label %x10
-
-x9:
-
-  store i32 514, ptr %x6, align 4
-  br label %x10
-
-x10:
-  %x3 = load i32, ptr %x6, align 4
-  %x4 = icmp eq i32 %x1, 2
+  %x = load i32, ptr %x6, align 4
+  %i = load i32, ptr %x7, align 4
+  %x12 = icmp eq i32 %i, %x1
+  %x10 = alloca i32, align 4
   %x11 = alloca i32, align 4
-  br i1 %x4, label %x13, label %x14
+  br i1 %x12, label %x13, label %x14
 
 x13:
+  br label %x9
 
-  store i32 51121, ptr %x11, align 4
   br label %x15
 
 x14:
-
-  store i32 %x3, ptr %x11, align 4
+  %x2 = add i32 %i, 1
+  %x3 = mul i32 %x, %x2
+  store i32 %x3, ptr %x10, align 4
+  store i32 %x2, ptr %x11, align 4
   br label %x15
 
 x15:
+  %x4 = load i32, ptr %x10, align 4
   %x5 = load i32, ptr %x11, align 4
-  call void @print(i32 noundef %x5)
+  store i32 %x4, ptr %x6, align 4
+  store i32 %x5, ptr %x7, align 4
+  br label %x8
+
+x9:
+  call void @print(i32 noundef %x)
   ret i32 0
 }
 

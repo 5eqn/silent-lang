@@ -28,39 +28,66 @@ declare i32 @printf(ptr noundef, ...) #1
 ; Function Attrs: noinline nounwind optnone sspstrong uwtable
 define dso_local i32 @main() #0 {
   %x1 = call i32 @input()
-  %x2 = icmp eq i32 %x1, 1
-  %x6 = alloca i32, align 4
-  br i1 %x2, label %x8, label %x9
+  %x2 = call i32 @input()
+  %x13 = alloca i32, align 4
+  %x14 = alloca i32, align 4
+  %x15 = alloca i32, align 4
+  store i32 %x1, ptr %x13, align 4
+  store i32 %x2, ptr %x14, align 4
+  store i32 1, ptr %x15, align 4
+  br label %x16
 
-x8:
+x16:
+  %a = load i32, ptr %x13, align 4
+  %p = load i32, ptr %x14, align 4
+  %r = load i32, ptr %x15, align 4
+  %x3 = icmp eq i32 %p, 0
+  %x18 = alloca i32, align 4
+  %x19 = alloca i32, align 4
+  %x20 = alloca i32, align 4
+  br i1 %x3, label %x22, label %x23
 
-  store i32 114, ptr %x6, align 4
-  br label %x10
+x22:
+  br label %x17
 
-x9:
+  br label %x24
 
-  store i32 514, ptr %x6, align 4
-  br label %x10
+x23:
+  %x4 = and i32 %p, 1
+  %x5 = icmp sgt i32 %x4, 0
+  %x25 = alloca i32, align 4
+  br i1 %x5, label %x27, label %x28
 
-x10:
-  %x3 = load i32, ptr %x6, align 4
-  %x4 = icmp eq i32 %x1, 2
-  %x11 = alloca i32, align 4
-  br i1 %x4, label %x13, label %x14
+x27:
+  %x6 = mul i32 %r, %a
+  store i32 %x6, ptr %x25, align 4
+  br label %x29
 
-x13:
+x28:
 
-  store i32 51121, ptr %x11, align 4
-  br label %x15
+  store i32 %r, ptr %x25, align 4
+  br label %x29
 
-x14:
+x29:
+  %x7 = load i32, ptr %x25, align 4
+  %x8 = mul i32 %a, %a
+  %x9 = sdiv i32 %p, 2
+  store i32 %x8, ptr %x18, align 4
+  store i32 %x9, ptr %x19, align 4
+  store i32 %x7, ptr %x20, align 4
+  br label %x24
 
-  store i32 %x3, ptr %x11, align 4
-  br label %x15
+x24:
+  %x10 = load i32, ptr %x18, align 4
+  %x11 = load i32, ptr %x19, align 4
+  %x12 = load i32, ptr %x20, align 4
+  store i32 %x10, ptr %x13, align 4
+  store i32 %x11, ptr %x14, align 4
+  store i32 %x12, ptr %x15, align 4
+  br label %x16
 
-x15:
-  %x5 = load i32, ptr %x11, align 4
-  call void @print(i32 noundef %x5)
+x17:
+  call void @print(i32 noundef %r)
   ret i32 0
 }
 
