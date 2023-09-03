@@ -1,6 +1,6 @@
 ## silent-lang
 
-English version: TODO
+English version: [README-en.md](README-en.md)
 
 寂语言，专为算法题设计的函数式编程语言，编译到 LLVM-IR。
 
