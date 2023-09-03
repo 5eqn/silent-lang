@@ -1,0 +1,6 @@
+let n = input in
+let x, i = 1, 1 rec
+  if i == n then nope else
+  let next = i + 1 in
+  x * next, next in
+print(x)

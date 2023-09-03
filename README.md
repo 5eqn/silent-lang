@@ -8,7 +8,9 @@ English version: TODO
 
 ### 代码阅读指南
 
-[Model.scala](src/main/scala/Model.scala) 存储了 silent-lang 和 LLVM-IR 的语法树，其中 LLVM-IR 的语法树比较有意思：IROps 用于记住已算出的变量的同时，使得编译结果可以用线性的「操作过程」表述出来。
+[Syntax.scala](src/main/scala/Syntax.scala) 存储了 Silent-Lang 的语法树。
+
+[LLVM.scala](src/main/scala/LLVM.scala) 存储了 LLVM-IR 的语法树，其中 LLVM-IR 的语法树比较有意思：IROps 用于记住已算出的变量的同时，使得编译结果可以用线性的「操作过程」表述出来。
 
 [Elaboration.scala](src/main/scala/Elaboration.scala) 暂时用于进行类型检查，同时把 silent-lang 表语法树转化成里语法树。后续该模块还会用于推导置空的类型。
 
@@ -169,12 +171,12 @@ let x, y, i = fib(1, 1, 2) in
 print(y)
 ```
 
-快速幂（暂时还写不出来，因为没处理各种符号）：
+快速幂：
 
 ```
 let a, p, r = input, input, 1 rec
   if p == 0 then nope else
-  a * a, p / 2, (if p & 1 then r * a else r) in
+  a * a, p / 2, (if p & 1 > 0 then r * a else r) in
 print(r)
 ```
 
@@ -293,6 +295,8 @@ let c[i of n + 1] = print(b[i])
 - [x] control flow
 - [x] left-rec syntax
 - [x] typecheck for function
+- [x] more operators
+- [ ] comment
 - [ ] pretty errors
 - [x] tail-rec
 - [x] tuple

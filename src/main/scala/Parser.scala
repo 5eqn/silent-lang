@@ -88,6 +88,25 @@ def someRest[A](lhs: List[A], p: Parser[A]): Parser[List[A]] = (for {
 
 def optional[A](p: Parser[A]) = p.map(Some(_)) | success(None)
 
+def oprts = List(
+  exact('&').map(_ => Oprt.And)
+    | exact('|').map(_ => Oprt.Or)
+    | exact('^').map(_ => Oprt.Xor),
+  exact('*').map(_ => Oprt.Mul)
+    | exact('/').map(_ => Oprt.Div)
+    | exact('%').map(_ => Oprt.Mod),
+  exact('+').map(_ => Oprt.Add)
+    | exact('-').map(_ => Oprt.Sub),
+  exact('>').map(_ => Oprt.Gt)
+    | exact('<').map(_ => Oprt.Lt)
+    | exact(">=").map(_ => Oprt.Ge)
+    | exact("<=").map(_ => Oprt.Le)
+    | exact("==").map(_ => Oprt.Eq)
+    | exact("!=").map(_ => Oprt.Ne),
+  exact("&&").map(_ => Oprt.All)
+    | exact("||").map(_ => Oprt.Any)
+)
+
 // 原子操作符
 def inp = exact("input").map(_ => Raw.Inp)
 
@@ -99,6 +118,9 @@ def neg = for {
   _ <- exact('-')
   value <- number
 } yield Raw.Num(-value)
+
+def boo = exact("true").map(_ => Raw.Boo(true)) |
+  exact("false").map(_ => Raw.Boo(false))
 
 def vrb = ident.map(Raw.Var(_))
 
@@ -115,7 +137,7 @@ def prt = for {
   _ <- exact(')')
 } yield Raw.Prt(arg)
 
-def atm = inp | brk | pos | neg | vrb | par | prt
+def atm = inp | brk | pos | neg | boo | vrb | par | prt
 
 // 函数应用
 def app = for {
@@ -130,19 +152,25 @@ def appRest(lhs: Raw): Parser[Raw] = (for {
   res <- appRest(Raw.App(lhs, rhs))
 } yield res) | success(lhs)
 
-// 加法
-def add = for {
-  lhs <- app
-  res <- addRest(lhs)
-} yield res
+// 中缀运算符
+def mid(level: Int): Parser[Raw] = level match
+  case 0 => app
+  case _ =>
+    for {
+      lhs <- mid(level - 1)
+      res <- midRest(level, lhs)
+    } yield res
 
-def addRest(lhs: Raw): Parser[Raw] = (for {
-  _ <- exact('+')
-  rhs <- app
-  res <- addRest(Raw.Add(lhs, rhs))
+def midRest(level: Int, lhs: Raw): Parser[Raw] = (for {
+  op <- oprts(level - 1)
+  rhs <- mid(level - 1)
+  res <- midRest(level, Raw.Mid(op, lhs, rhs))
 } yield res) | success(lhs)
 
-def tup = some(add).map(ls => if ls.length == 1 then ls(0) else Raw.Tup(ls))
+// 元组
+def tup = some(mid(oprts.length)).map(ls =>
+  if ls.length == 1 then ls(0) else Raw.Tup(ls)
+)
 
 // 类型
 def tyInt = exact("int").map(_ => Type.I32)
@@ -198,14 +226,12 @@ def let = for {
 // 选择
 def alt = for {
   _ <- exact("if")
-  lhs <- term
-  _ <- exact("==")
-  rhs <- term
+  cond <- term
   _ <- exact("then")
   x <- term
   _ <- exact("else")
   y <- term
-} yield Raw.Alt(lhs, rhs, x, y)
+} yield Raw.Alt(cond, x, y)
 
 // 整个表达式
 def term: Parser[Raw] = tup | lam | let | rec | alt

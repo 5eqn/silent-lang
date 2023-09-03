@@ -18,6 +18,10 @@ def pEval(env: Env, term: Term): IRPack = term match
   case Term.Num(value) =>
     IRPack(IRVal.Num(value), IROps.empty)
 
+  // 布尔值直接返回
+  case Term.Boo(value) =>
+    IRPack(IRVal.Boo(value), IROps.empty)
+
   // 变量要查表得到值
   case Term.Var(name) =>
     IRPack(env(name), IROps.empty)
@@ -41,26 +45,24 @@ def pEval(env: Env, term: Term): IRPack = term match
       case _ => throw new Exception("app lhs is not a function")
 
   // 加法，先求加法两边的值
-  case Term.Add(lhs, rhs, ty) =>
+  case Term.Mid(oprt, lhs, rhs, ty) =>
     val IRPack(lv, lop) = pEval(env, lhs)
     val IRPack(rv, rop) = pEval(env, rhs)
     val ops = lop.add(rop)
-    (lv, rv) match
 
-      // 如果两个都是数，就可以直接化简
-      case (IRVal.Num(a), IRVal.Num(b)) =>
-        IRPack(IRVal.Num(a + b), ops)
+    // 尝试直接化简
+    oprt.tryEval(lv, rv) match
+      case Some(value) => IRPack(value, ops)
 
       // 否则新建一个变量存储这个加法成果
-      case _ =>
+      case None =>
         val name = fresh
-        val newOp = IROp.Add(name, ty, lv, rv)
+        val newOp = IROp.Mid(oprt, name, ty, lv, rv)
         IRPack(IRVal.Var(name), ops.add(newOp))
 
   // 定义或递归
   case Term.Let(name, value, recVal, next, ty) =>
-    val vpk = pEval(env, value)
-    val IRPack(vv, vop) = vpk
+    val IRPack(vv, vop) = pEval(env, value)
     val (e, op) = recVal match
 
       // 若不是递归块，直接转移值
@@ -97,7 +99,7 @@ def pEval(env: Env, term: Term): IRPack = term match
           case _            => List(ty)
 
         // 构造出递归操作
-        val newOp = IROp.Rec(name, tys, vpk, rpk)
+        val newOp = IROp.Rec(name, tys, vv, rpk)
 
         // 构造出结果
         (e, IROps.from(newOp))
@@ -106,17 +108,15 @@ def pEval(env: Env, term: Term): IRPack = term match
     pEval(e, next).prepend(vop.add(op))
 
   // 选择分支，先求等式两边的值
-  case Term.Alt(lhs, rhs, x, y, ty) =>
-    val IRPack(lv, lop) = pEval(env, lhs)
-    val IRPack(rv, rop) = pEval(env, rhs)
-    val ops = lop.add(rop)
-    (lv, rv) match
+  case Term.Alt(cond, x, y, ty) =>
+    val IRPack(cv, cop) = pEval(env, cond)
+    cv match
 
       // 两个值可以直接判断，就直接化简
-      case (IRVal.Num(a), IRVal.Num(b)) =>
-        if a == b
-        then pEval(env, x).prepend(ops)
-        else pEval(env, y).prepend(ops)
+      case IRVal.Boo(flag) =>
+        if flag
+        then pEval(env, x).prepend(cop)
+        else pEval(env, y).prepend(cop)
 
       // 否则两个分支都要计算
       case _ =>
@@ -132,13 +132,13 @@ def pEval(env: Env, term: Term): IRPack = term match
 
         // 构造出 Alt 操作
         val name = tys.map(_ => fresh)
-        val newOp = IROp.Alt(name, tys, lv, rv, xpk, ypk)
+        val newOp = IROp.Alt(name, tys, cv, xpk, ypk)
 
         // 构造出结果
         val res =
           if name.length == 1 then IRVal.Var(name(0))
           else IRVal.Tup(name.map(n => IRVal.Var(n)))
-        IRPack(res, ops.add(newOp))
+        IRPack(res, cop.add(newOp))
 
   // 元组直接暴力求
   case Term.Tup(ls) =>

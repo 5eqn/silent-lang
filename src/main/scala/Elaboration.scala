@@ -19,6 +19,10 @@ def infer(ctx: Ctx, term: Raw): TmPack = term match
   case Raw.Num(value) =>
     TmPack(Term.Num(value), Type.I32)
 
+  // 布尔值的类型一定是 i1
+  case Raw.Boo(value) =>
+    TmPack(Term.Boo(value), Type.Boo)
+
   // 变量的类型要查表
   case Raw.Var(name) =>
     TmPack(Term.Var(name), ctx(name))
@@ -38,14 +42,13 @@ def infer(ctx: Ctx, term: Raw): TmPack = term match
       case _ => throw new Exception("can't call non-function")
 
   // 加法类型容易通过参数求出
-  case Raw.Add(lhs, rhs) =>
+  case Raw.Mid(oprt, lhs, rhs) =>
     val TmPack(ltm, lty) = infer(ctx, lhs)
     val TmPack(rtm, rty) = infer(ctx, rhs)
 
     // 加号两边都得是 i32 才能相加
-    if lty != Type.I32 || rty != Type.I32 then
-      throw new Exception("can't add non-numbers")
-    TmPack(Term.Add(ltm, rtm, Type.I32), Type.I32)
+    val resTy = oprt.infer(lty, rty)
+    TmPack(Term.Mid(oprt, ltm, rtm, lty), resTy)
 
   // 赋值语句直接转换成语境
   case Raw.Let(name, value, recVal, next) =>
@@ -78,19 +81,17 @@ def infer(ctx: Ctx, term: Raw): TmPack = term match
     TmPack(Term.Let(name, tm, rtm, ntm, ty), nty)
 
   // 选择语句类型容易通过两边求出
-  case Raw.Alt(lhs, rhs, x, y) =>
-    val TmPack(ltm, lty) = infer(ctx, lhs)
-    val TmPack(rtm, rty) = infer(ctx, rhs)
+  case Raw.Alt(cond, x, y) =>
+    val TmPack(ctm, cty) = infer(ctx, cond)
 
-    // 等式两边全是整数才能比较
-    if lty != Type.I32 || rty != Type.I32 then
-      throw new Exception("can't compare non-numbers")
+    // 比较的依据必须是一个布尔值
+    if cty != Type.Boo then throw new Exception("invalid comparison")
     val TmPack(xtm, xty) = infer(ctx, x)
     val TmPack(ytm, yty) = infer(ctx, y)
 
     // 两种分支的类型应该相同
     val uty = unify(xty, yty)
-    TmPack(Term.Alt(ltm, rtm, xtm, ytm, uty), uty)
+    TmPack(Term.Alt(ctm, xtm, ytm, uty), uty)
 
   // 元组直接暴力求
   case Raw.Tup(ls) =>
