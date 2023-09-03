@@ -1,5 +1,9 @@
 def pEval(env: Env, term: Term): IRPack = term match
 
+  // Nope 操作会变成一条跳转指令，值是 Brk，这会阻止 store 操作
+  case Term.Brk =>
+    IRPack(IRVal.Brk, IROps.from(IROp.Brk))
+
   // 对输入操作单独使用一条指令
   case Term.Inp =>
     val name = fresh
@@ -53,29 +57,53 @@ def pEval(env: Env, term: Term): IRPack = term match
         val newOp = IROp.Add(name, ty, lv, rv)
         IRPack(IRVal.Var(name), ops.add(newOp))
 
-  // 定义变量直接转移值
-  case Term.Let(name, value, next) =>
-    val IRPack(vv, vop) = pEval(env, value)
-    val e = (name.length, vv) match
+  // 定义或递归
+  case Term.Let(name, value, recVal, next, ty) =>
+    val vpk = pEval(env, value)
+    val IRPack(vv, vop) = vpk
+    val (e, op) = recVal match
 
-      // 在 let a, b = c, d 中，希望左右一样多
-      case (len, IRVal.Tup(ls)) if len == ls.length =>
-        name
-          .zip(ls)
-          .foldRight(env)((pair, e) =>
-            val (n, v) = pair
-            e.bind(n, v)
-          )
+      // 若不是递归块，直接转移值
+      case None =>
+        (name.length, vv) match
 
-      // 在 let pair = 1, 2 中，直接把 (1, 2) 绑定到 pair 上
-      case (1, _) =>
-        env.bind(name(0), vv)
+          // 在 let a, b = c, d 中，希望左右一样多
+          case (len, IRVal.Tup(ls)) if len == ls.length =>
+            (
+              name
+                .zip(ls)
+                .foldLeft(env)((e, pair) =>
+                  val (n, v) = pair
+                  e.bind(n, v)
+                ),
+              IROps.empty
+            )
 
-      // 其他情况全部寄掉
-      case _ => throw new Exception("let spine length mismatch")
+          // 在 let pair = 1, 2 中，直接把 (1, 2) 绑定到 pair 上
+          case (1, _) =>
+            (env.bind(name(0), vv), IROps.empty)
+
+          // 其他情况全部寄掉
+          case _ => throw new Exception("let spine length mismatch")
+
+      // 若是递归块，先计算递归操作
+      case Some(rec) =>
+        val e = name.foldLeft(env)((e, n) => e.bind(n, IRVal.Var(n)))
+        val rpk = pEval(e, rec)
+
+        // 构建类型列表
+        val tys = ty match
+          case Type.Tup(ls) => ls
+          case _            => List(ty)
+
+        // 构造出递归操作
+        val newOp = IROp.Rec(name, tys, vpk, rpk)
+
+        // 构造出结果
+        (e, IROps.from(newOp))
 
     // 继续求值
-    pEval(e, next).prepend(vop)
+    pEval(e, next).prepend(vop.add(op))
 
   // 选择分支，先求等式两边的值
   case Term.Alt(lhs, rhs, x, y, ty) =>
@@ -94,20 +122,30 @@ def pEval(env: Env, term: Term): IRPack = term match
       case _ =>
         val IRPack(xv, xop) = pEval(env, x)
         val IRPack(yv, yop) = pEval(env, y)
-
-        // 构造出 Alt 操作
-        val name = fresh
         val xpk = IRPack(xv, xop)
         val ypk = IRPack(yv, yop)
-        val newOp = IROp.Alt(name, ty, lv, rv, xpk, ypk)
-        IRPack(IRVal.Var(name), ops.add(newOp))
+
+        // 构造出类型列表
+        val tys = ty match
+          case Type.Tup(ls) => ls
+          case _            => List(ty)
+
+        // 构造出 Alt 操作
+        val name = tys.map(_ => fresh)
+        val newOp = IROp.Alt(name, tys, lv, rv, xpk, ypk)
+
+        // 构造出结果
+        val res =
+          if name.length == 1 then IRVal.Var(name(0))
+          else IRVal.Tup(name.map(n => IRVal.Var(n)))
+        IRPack(res, ops.add(newOp))
 
   // 元组直接暴力求
   case Term.Tup(ls) =>
     val (v, op) =
-      ls.foldRight((List[IRVal](), IROps.empty))((tm, pk) =>
+      ls.foldLeft((List[IRVal](), IROps.empty))((pk, tm) =>
         val (pv, pop) = pk
         val IRPack(tv, top) = pEval(env, tm)
-        (tv :: pv, pop.add(top))
+        (pv :+ tv, pop.add(top))
       )
     IRPack(IRVal.Tup(v), op)
