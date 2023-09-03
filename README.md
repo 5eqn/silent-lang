@@ -6,6 +6,23 @@ English version: [README-en.md](README-en.md)
 
 名字来源：「杀戮尖塔」游戏角色，寂静猎手。
 
+### roadmap
+
+- [x] partial evaluation
+- [x] input
+- [x] print
+- [x] control flow
+- [x] left-rec syntax
+- [x] typecheck for function
+- [x] more operators
+- [ ] comment
+- [ ] pretty errors
+- [x] tail-rec
+- [x] tuple
+- [ ] use llvm binding
+- [ ] vector
+- [ ] string
+
 ### 代码阅读指南
 
 [Syntax.scala](src/main/scala/Syntax.scala) 存储了 Silent-Lang 的语法树。
@@ -287,19 +304,4 @@ let c[i of n + 1] = print(b[i])
 
 
 
-### roadmap
 
-- [x] partial evaluation
-- [x] input
-- [x] print
-- [x] control flow
-- [x] left-rec syntax
-- [x] typecheck for function
-- [x] more operators
-- [ ] comment
-- [ ] pretty errors
-- [x] tail-rec
-- [x] tuple
-- [ ] use llvm binding
-- [ ] vector
-- [ ] string
