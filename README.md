@@ -22,6 +22,8 @@ English version: [README-en.md](README-en.md)
 - [ ] use llvm binding
 - [ ] vector
 - [ ] string
+- [ ] mutual-rec
+- [ ] closure
 
 ### 代码阅读指南
 
