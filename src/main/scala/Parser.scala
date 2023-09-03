@@ -1,5 +1,4 @@
 // 一些辅助函数
-
 def isNumeric(ch: Char) = ch >= '0' && ch <= '9'
 def isAlphabetic(ch: Char) = ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z'
 
@@ -11,8 +10,8 @@ def collect(pred: Char => Boolean, str: String, acc: String): (String, String) =
 def keywords = List(
   "lam",
   "let",
-  "rec",
   "in",
+  "rec",
   "app",
   "if",
   "then",
@@ -20,17 +19,16 @@ def keywords = List(
   "int",
   "ptr",
   "input",
-  "print"
+  "print",
+  "nope"
 )
 
 // 处理结果
-
 enum Result[+A]:
   case Success(res: A, rem: String)
   case Fail
 
 // 分析模块
-
 case class Parser[A](run: String => Result[A]):
   def map[B](cont: A => B) = Parser(str =>
     run(str) match
@@ -49,7 +47,6 @@ case class Parser[A](run: String => Result[A]):
   )
 
 // 一些分析函数
-
 def success[A](res: A) = Parser(str => Result.Success(res, str))
 
 def exact(exp: Char) = Parser(str =>
@@ -86,12 +83,15 @@ def some[A](p: Parser[A]) = for {
 def someRest[A](lhs: List[A], p: Parser[A]): Parser[List[A]] = (for {
   _ <- exact(',')
   rhs <- p
-  res <- someRest(rhs :: lhs, p)
+  res <- someRest(lhs :+ rhs, p)
 } yield res) | success(lhs)
 
-// 原子操作符
+def optional[A](p: Parser[A]) = p.map(Some(_)) | success(None)
 
+// 原子操作符
 def inp = exact("input").map(_ => Raw.Inp)
+
+def brk = exact("nope").map(_ => Raw.Brk)
 
 def pos = number.map(Raw.Num(_))
 
@@ -102,7 +102,7 @@ def neg = for {
 
 def vrb = ident.map(Raw.Var(_))
 
-def brk = for {
+def par = for {
   _ <- exact('(')
   tm <- term
   _ <- exact(')')
@@ -115,10 +115,9 @@ def prt = for {
   _ <- exact(')')
 } yield Raw.Prt(arg)
 
-def atm = inp | pos | neg | vrb | brk | prt
+def atm = inp | brk | pos | neg | vrb | par | prt
 
 // 函数应用
-
 def app = for {
   lhs <- atm
   res <- appRest(lhs)
@@ -132,7 +131,6 @@ def appRest(lhs: Raw): Parser[Raw] = (for {
 } yield res) | success(lhs)
 
 // 加法
-
 def add = for {
   lhs <- app
   res <- addRest(lhs)
@@ -147,10 +145,15 @@ def addRest(lhs: Raw): Parser[Raw] = (for {
 def tup = some(add).map(ls => if ls.length == 1 then ls(0) else Raw.Tup(ls))
 
 // 类型
-
 def tyInt = exact("int").map(_ => Type.I32)
 
-def tyAtom = tyInt
+def tyPar = for {
+  _ <- exact('(')
+  res <- tyAny
+  _ <- exact(')')
+} yield res
+
+def tyAtom: Parser[Type] = tyInt | tyPar
 
 def tyFun = for {
   lhs <- tyAtom
@@ -166,7 +169,6 @@ def tyAny =
   some(tyFun).map(ls => if ls.length == 1 then ls(0) else Type.Tup(ls))
 
 // 匿名函数
-
 def lam = for {
   _ <- exact('(')
   param <- ident
@@ -178,29 +180,22 @@ def lam = for {
 } yield Raw.Lam(param, ty, body)
 
 // 赋值
+def rec = for {
+  _ <- exact("rec")
+  value <- term
+} yield value
 
 def let = for {
   _ <- exact("let")
   name <- some(ident)
   _ <- exact('=')
   value <- term
+  recVal <- optional(rec)
   _ <- exact("in")
   next <- term
-} yield Raw.Let(name, value, next)
-
-// 递归
-
-def rec = for {
-  _ <- exact("let")
-  name <- some(ident)
-  _ <- exact('=')
-  value <- term
-  _ <- exact("in")
-  next <- term
-} yield Raw.Let(name, value, next)
+} yield Raw.Let(name, value, recVal, next)
 
 // 选择
-
 def alt = for {
   _ <- exact("if")
   lhs <- term
@@ -213,5 +208,4 @@ def alt = for {
 } yield Raw.Alt(lhs, rhs, x, y)
 
 // 整个表达式
-
 def term: Parser[Raw] = tup | lam | let | rec | alt

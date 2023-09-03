@@ -145,7 +145,7 @@ define dso_local i32 @main() #0 {
 }
 ```
 
-#### 数组和递归（WIP）
+#### 递归
 
 斐波那契数列：
 
@@ -154,21 +154,33 @@ let n = input in
 let x, y, i = 1, 1, 2 rec
   if i == n then nope else
   y, x + y, i + 1 in
-
 print(y)
 ```
 
-`nope` 关键字名字来源：「炸弹猫咪」桌游卡牌，否决。
+其实上面的代码等效于：
 
-快速幂：
+```
+let n = input in
+let fib = (args: int, int, int) =>
+  let x, y, i = args in
+  if i == n then x, y, i else
+  fib(y, x + y, i + 1) in
+let x, y, i = fib(1, 1, 2) in
+print(y)
+```
+
+快速幂（暂时还写不出来，因为没处理各种符号）：
 
 ```
 let a, p, r = input, input, 1 rec
   if p == 0 then nope else
-  a * a, p / 2, if p & 1 then r * a else r in
-
+  a * a, p / 2, (if p & 1 then r * a else r) in
 print(r)
 ```
+
+`nope` 关键字名字来源：「炸弹猫咪」桌游卡牌，否决。
+
+#### 数组（WIP）
 
 数组输出：
 
@@ -282,7 +294,7 @@ let c[i of n + 1] = print(b[i])
 - [x] left-rec syntax
 - [x] typecheck for function
 - [ ] pretty errors
-- [ ] tail-rec
+- [x] tail-rec
 - [x] tuple
 - [ ] use llvm binding
 - [ ] vector

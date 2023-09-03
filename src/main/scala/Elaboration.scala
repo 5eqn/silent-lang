@@ -1,6 +1,9 @@
 // 推导一个 Raw 的类型
-
 def infer(ctx: Ctx, term: Raw): TmPack = term match
+
+  // Nope 的类型是任意的
+  case Raw.Brk =>
+    TmPack(Term.Brk, Type.Any)
 
   // 输入的类型暂时只能是 i32
   case Raw.Inp =>
@@ -45,7 +48,7 @@ def infer(ctx: Ctx, term: Raw): TmPack = term match
     TmPack(Term.Add(ltm, rtm, Type.I32), Type.I32)
 
   // 赋值语句直接转换成语境
-  case Raw.Let(name, value, next) =>
+  case Raw.Let(name, value, recVal, next) =>
     val TmPack(tm, ty) = infer(ctx, value)
     val c = (name.length, ty) match
 
@@ -53,7 +56,7 @@ def infer(ctx: Ctx, term: Raw): TmPack = term match
       case (len, Type.Tup(ls)) if ls.length == len =>
         name
           .zip(ls)
-          .foldRight(ctx)((pair, c) =>
+          .foldLeft(ctx)((c, pair) =>
             val (n, v) = pair
             c.bind(n, v)
           )
@@ -65,9 +68,14 @@ def infer(ctx: Ctx, term: Raw): TmPack = term match
       // 其他情况全部寄掉
       case _ => throw new Exception("let spine length mismatch")
 
+    // 检查递归体内语句是否正确
+    val rtm = recVal match
+      case Some(res) => Some(check(c, res, ty))
+      case None      => None
+
     // 推导后续语句的类型
     val TmPack(ntm, nty) = infer(c, next)
-    TmPack(Term.Let(name, tm, ntm), nty)
+    TmPack(Term.Let(name, tm, rtm, ntm, ty), nty)
 
   // 选择语句类型容易通过两边求出
   case Raw.Alt(lhs, rhs, x, y) =>
@@ -81,22 +89,32 @@ def infer(ctx: Ctx, term: Raw): TmPack = term match
     val TmPack(ytm, yty) = infer(ctx, y)
 
     // 两种分支的类型应该相同
-    if xty != ytm then throw new Exception("if cases type mismatch")
-    TmPack(Term.Alt(ltm, rtm, xtm, ytm, xty), xty)
+    val uty = unify(xty, yty)
+    TmPack(Term.Alt(ltm, rtm, xtm, ytm, uty), uty)
 
   // 元组直接暴力求
   case Raw.Tup(ls) =>
     val (tms, tys) =
-      ls.foldRight((List[Term](), List[Type]()))((tm, pk) =>
+      ls.foldLeft((List[Term](), List[Type]()))((pk, tm) =>
         val (ptm, pty) = pk
         val TmPack(ttm, tty) = infer(ctx, tm)
-        (ttm :: ptm, tty :: pty)
+        (ptm :+ ttm, pty :+ tty)
       )
     TmPack(Term.Tup(tms), Type.Tup(tys))
 
 // 检查某 Raw 是否是给定类型
-
 def check(ctx: Ctx, term: Raw, ty: Type): Term =
   val TmPack(tm, expected) = infer(ctx, term)
-  if ty != expected then throw new Exception("type mismatch")
+  unify(ty, expected)
   tm
+
+// 检查两个类型能不能被看成相同
+def unify(lhs: Type, rhs: Type): Type =
+  (lhs, rhs) match
+
+    // Any 类型可以与任何东西相同
+    case (Type.Any, _) => rhs
+    case (_, Type.Any) => lhs
+
+    // 否则两个类型必须要严格相同
+    case _ => if lhs != rhs then throw new Exception("type mismatch") else lhs
