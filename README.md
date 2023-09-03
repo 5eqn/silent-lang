@@ -27,7 +27,7 @@ English version: [README-en.md](README-en.md)
 
 ### 代码阅读指南
 
-[Syntax.scala](src/main/scala/Syntax.scala) 存储了 Silent-Lang 的语法树。
+[Syntax.scala](src/main/scala/Syntax.scala) 存储了 silent-lang 的表语法树和里语法树。表语法树有些信息（例如类型标记）被省略，由类型检查器推导出类型之后转化成有更多信息的里语法树。
 
 [LLVM.scala](src/main/scala/LLVM.scala) 存储了 LLVM-IR 的语法树，其中 LLVM-IR 的语法树比较有意思：IROps 用于记住已算出的变量的同时，使得编译结果可以用线性的「操作过程」表述出来。
 

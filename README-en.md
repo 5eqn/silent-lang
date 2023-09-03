@@ -1,6 +1,6 @@
 ## silent-lang
 
-Silent-Lang is a language targeting Competitive Programming. It compiles to LLVM-IR (for now).
+Silent-lang is a language targeting Competitive Programming. It compiles to LLVM-IR (for now).
 
 The name is from a character of *Slay the Spire*, The Silent.
 
