@@ -90,7 +90,13 @@ def pEval(env: Env, term: Term): IRPack = term match
 
       // 若是递归块，先计算递归操作
       case Some(rec) =>
-        val e = name.foldLeft(env)((e, n) => e.bind(n, IRVal.Var(n)))
+        val ns = name.map(_ => fresh)
+        val e = name
+          .zip(ns)
+          .foldLeft(env)((e, pair) =>
+            val (from, to) = pair
+            e.bind(from, IRVal.Var(to))
+          )
         val rpk = pEval(e, rec)
 
         // 构建类型列表
@@ -99,7 +105,7 @@ def pEval(env: Env, term: Term): IRPack = term match
           case _            => List(ty)
 
         // 构造出递归操作
-        val newOp = IROp.Rec(name, tys, vv, rpk)
+        val newOp = IROp.Rec(ns, tys, vv, rpk)
 
         // 构造出结果
         (e, IROps.from(newOp))
