@@ -8,6 +8,10 @@ English version: [README-en.md](README-en.md)
 
 名字来源：「杀戮尖塔」游戏角色，寂静猎手（The Silent）。
 
+### 样例展示
+
+参见 [samples](sample/)。
+
 ### 使用方式
 
 1. 确保自己安装了 Java，且在命令行中使用 `java` 不会被告知该命令不存在
@@ -34,10 +38,6 @@ English version: [README-en.md](README-en.md)
 - [ ] string
 - [ ] mutual-rec
 - [ ] closure
-
-### 样例展示
-
-参见 [samples](sample/)。
 
 ### 代码阅读指南
 
