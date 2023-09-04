@@ -46,6 +46,7 @@ case class Range(from: Input, to: Input):
 trait Ranged:
   var range = Range(Input("", 0), Input("", 0))
 
+// 可以获得范围的 Parser
 def ranged[A <: Ranged](p: Parser[A]) = Parser(str =>
   p.run(str) match
     case Result.Success(res, rem) =>
@@ -113,7 +114,8 @@ def line = Parser(str => Result.Success((), str.trim(_ != '\n')))
 def space = Parser(str => Result.Success((), str.trim(_.isWhitespace)))
 def ws = space.flatMap(_ => optional(comment))
 
-// 一些分析函数
+// 一些 Parser
+
 def success[A](res: A) = Parser(str => Result.Success(res, str))
 
 def exact(exp: Char) = Parser(str =>

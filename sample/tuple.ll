@@ -29,8 +29,8 @@ declare i32 @printf(ptr noundef, ...) #1
 define dso_local i32 @main() #0 {
   %x1 = call i32 @input()
   %x2 = call i32 @input()
-  %x3 = add nsw i32 9, %x2
-  %x4 = add nsw i32 %x3, %x1
+  %x3 = add i32 9, %x2
+  %x4 = add i32 %x3, %x1
   call void @print(i32 noundef %x4)
   ret i32 0
 }

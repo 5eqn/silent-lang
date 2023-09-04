@@ -1,16 +1,16 @@
 let pow = (x: int) => (y: int) =>
   let a, p, r = x, y, 1 rec
     if p == 0 then nope else
-    let next = if p & 1 > 0 then r * a else r in
-    a * a, p / 2, next in
-  r in
+    let next = if p & 1 > 0 then r * a else r
+    a * a, p / 2, next
+  r
 
-let p, n = 2, input in
+let p, n = 2, input
 let l, u = 0, 46340 rec
   if l + 1 == u then nope else
-  let mid = (l + u) / 2 in
+  let mid = (l + u) / 2
   if pow(mid)(p) <= n
   then mid, u
-  else l, mid in
+  else l, mid
 
 print(l)
