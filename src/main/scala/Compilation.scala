@@ -53,5 +53,5 @@ attributes #1 = { "frame-pointer"="all" "no-trapping-math"="true" "stack-protect
 
 def output(code: String, fileName: String) =
   val content = fileStart + code + fileEnd
-  val filePath = Paths.get(s"sample/$fileName.ll")
+  val filePath = Paths.get(fileName)
   Files.write(filePath, content.getBytes)

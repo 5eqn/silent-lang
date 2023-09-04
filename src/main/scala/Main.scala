@@ -1,10 +1,8 @@
 import scala.io.Source
 
-val fileName = "bisearch"
-
 // 从这里开始运行
-@main def run() =
-  val src = Source.fromFile(s"sample/$fileName.silent")
+@main def run(from: String, to: String) =
+  val src = Source.fromFile(from)
   val str = src.mkString
   src.close()
   term.run(str) match
@@ -12,5 +10,5 @@ val fileName = "bisearch"
     case Result.Success(res, rem) =>
       val TmPack(tm, ty) = infer(Ctx.empty, res)
       val pk = pEval(Env.empty, tm)
-      output(s"$pk", fileName)
+      output(s"$pk", to)
       println("Compilation succeeds!")
