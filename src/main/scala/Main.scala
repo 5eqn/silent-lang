@@ -5,7 +5,7 @@ import scala.io.Source
   val src = Source.fromFile(from)
   val str = src.mkString
   src.close()
-  term.run(str) match
+  term.run(Input(str, 0)) match
     case Result.Fail => println("Parse failed")
     case Result.Success(res, rem) =>
       val TmPack(tm, ty) = infer(Ctx.empty, res)
