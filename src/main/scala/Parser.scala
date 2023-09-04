@@ -26,10 +26,10 @@ case class Input(source: String, offset: Int):
     if (source.startsWith(p, offset)) then
       Some(Input(source, offset + p.length))
     else None
-  def trimmed =
+  def trim(pred: Char => Boolean) =
     var from = offset
     val to = source.length()
-    while (from < to && source(from).isWhitespace)
+    while (from < to && pred(source(from)))
       from += 1
     Input(source, from)
 
@@ -102,10 +102,19 @@ case class Parser[A](run: Input => Result[A]):
       case Result.Fail              => another.run(str)
   )
 
+// 注释和空白
+def comment: Parser[Unit] = for {
+  _ <- exact("😅")
+  _ <- line
+  _ <- ws
+} yield ()
+
+def line = Parser(str => Result.Success((), str.trim(_ != '\n')))
+def space = Parser(str => Result.Success((), str.trim(_.isWhitespace)))
+def ws = space.flatMap(_ => optional(comment))
+
 // 一些分析函数
 def success[A](res: A) = Parser(str => Result.Success(res, str))
-
-def ws = Parser(str => Result.Success((), str.trimmed))
 
 def exact(exp: Char) = Parser(str =>
   str.headOption match
@@ -147,6 +156,7 @@ def someRest[A](lhs: List[A], p: Parser[A]): Parser[List[A]] = (for {
 
 def optional[A](p: Parser[A]) = p.map(Some(_)) | success(None)
 
+// 操作符列表
 def oprts = List(
   exact('&').map(_ => Oprt.And)
     | exact('|').map(_ => Oprt.Or)
@@ -296,8 +306,6 @@ def let = for {
   _ <- ws
   recVal <- optional(rec)
   _ <- ws
-  _ <- exact("in")
-  _ <- ws
   next <- term
 } yield Raw.Let(name, value, recVal, next)
 
@@ -318,3 +326,8 @@ def alt = for {
 
 // 整个表达式
 def term: Parser[Raw] = ranged(tup | lam | let | rec | alt)
+def source = for {
+  _ <- ws
+  res <- term
+  _ <- ws
+} yield res
