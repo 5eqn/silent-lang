@@ -1,5 +1,0 @@
-let a = input
-let b = a + a
-let f = (x: int) => x + 1
-let five = f(4)
-print(f(b + b + five))

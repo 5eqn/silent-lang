@@ -1,5 +1,0 @@
-let n = input
-let x, y, i = 1, 1, 2 rec
-  if i == n then nope else
-  y, x + y, i + 1
-print(y)

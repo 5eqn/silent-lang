@@ -1,5 +1,0 @@
-let swap = (f: int -> int -> int) => (x: int) => (y: int) => f(y)(x)
-let test = (x: int) => (y: int) => x
-let x = input
-let y = input
-print(swap(test)(x)(y))

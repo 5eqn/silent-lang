@@ -1,6 +1,0 @@
-let n = input
-let x, i = 1, 1 rec
-  if i == n then nope else
-  let next = i + 1
-  x * next, next
-print(x)

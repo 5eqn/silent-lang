@@ -1,4 +1,0 @@
-let a = input
-let b = if a == 1 then 114 else 514
-let c = if a == 2 then 51121 else b
-print(c)
