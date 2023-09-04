@@ -4,7 +4,7 @@ case class Position(line: Int, col: Int, content: String)
 object Position:
   def empty = Position(1, 1, "Offset is out of bounds")
 
-// 带语义的输入
+// 带位置的输入
 case class Input(source: String, offset: Int):
   def pos: Position =
     val lines = source.split('\n')
@@ -74,7 +74,6 @@ def keywords = List(
   "then",
   "else",
   "int",
-  "ptr",
   "input",
   "print",
   "nope"
@@ -105,7 +104,7 @@ case class Parser[A](run: Input => Result[A]):
 
 // 注释和空白
 def comment: Parser[Unit] = for {
-  _ <- exact("😅")
+  _ <- exact("😅") | exact("//")
   _ <- line
   _ <- ws
 } yield ()
@@ -115,7 +114,6 @@ def space = Parser(str => Result.Success((), str.trim(_.isWhitespace)))
 def ws = space.flatMap(_ => optional(comment))
 
 // 一些 Parser
-
 def success[A](res: A) = Parser(str => Result.Success(res, str))
 
 def exact(exp: Char) = Parser(str =>
@@ -142,7 +140,7 @@ def ident = Parser(str =>
   if res.length() > 0 && !keywords.contains(res)
   then Result.Success(res, rem)
   else Result.Fail
-)
+) | exact("_")
 
 def some[A](p: Parser[A]) = for {
   lhs <- p

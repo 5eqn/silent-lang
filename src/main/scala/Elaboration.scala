@@ -25,7 +25,10 @@ def infer(ctx: Ctx, term: Raw): TmPack = term match
 
   // 变量的类型要查表
   case Raw.Var(name) =>
-    TmPack(Term.Var(name), ctx(name))
+    try
+      val ty = ctx(name)
+      TmPack(Term.Var(name), ty)
+    catch case _ => throw Error.NameNotFound(term)
 
   // 匿名函数的类型可以直接求出，因为没有依值类型
   case Raw.Lam(param, ty, body) =>

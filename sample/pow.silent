@@ -1,5 +1,0 @@
-let a, p, r = input, input, 1 rec
-  if p == 0 then nope else
-  let next = if p & 1 > 0 then r * a else r
-  a * a, p / 2, next
-print(r)
