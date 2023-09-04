@@ -5,12 +5,12 @@ let pow = (x: int) => (y: int) =>
     a * a, p / 2, next in
   r in
 
-let p, n = input, input in
-let l, u = 0, 100 rec
+let p, n = 2, input in
+let l, u = 0, 46340 rec
   if l + 1 == u then nope else
   let mid = (l + u) / 2 in
-  if pow(mid)(p) > n
-  then l, mid
-  else mid, u in
+  if pow(mid)(p) <= n
+  then mid, u
+  else l, mid in
 
 print(l)

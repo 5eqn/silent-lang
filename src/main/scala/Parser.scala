@@ -1,3 +1,13 @@
+// 位置信息
+case class Position(line: Int, col: Int, content: String)
+
+object Position:
+  def empty = Position(0, 0, "")
+
+// 有位置的东西
+trait Positional:
+  var pos = Position.empty
+
 // 一些辅助函数
 def isNumeric(ch: Char) = ch >= '0' && ch <= '9'
 def isAlphabetic(ch: Char) = ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z'
@@ -97,10 +107,10 @@ def oprts = List(
     | exact('%').map(_ => Oprt.Mod),
   exact('+').map(_ => Oprt.Add)
     | exact('-').map(_ => Oprt.Sub),
-  exact('>').map(_ => Oprt.Gt)
-    | exact('<').map(_ => Oprt.Lt)
-    | exact(">=").map(_ => Oprt.Ge)
+  exact(">=").map(_ => Oprt.Ge)
     | exact("<=").map(_ => Oprt.Le)
+    | exact('>').map(_ => Oprt.Gt)
+    | exact('<').map(_ => Oprt.Lt)
     | exact("==").map(_ => Oprt.Eq)
     | exact("!=").map(_ => Oprt.Ne),
   exact("&&").map(_ => Oprt.All)

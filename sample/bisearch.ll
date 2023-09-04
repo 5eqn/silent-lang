@@ -28,121 +28,120 @@ declare i32 @printf(ptr noundef, ...) #1
 ; Function Attrs: noinline nounwind optnone sspstrong uwtable
 define dso_local i32 @main() #0 {
   %x1 = call i32 @input()
-  %x2 = call i32 @input()
-  %x22 = alloca i32, align 4
-  %x23 = alloca i32, align 4
-  store i32 0, ptr %x22, align 4
-  store i32 100, ptr %x23, align 4
-  br label %x24
-
-x24:
-  %l = load i32, ptr %x22, align 4
-  %u = load i32, ptr %x23, align 4
-  %x3 = add i32 %l, 1
-  %x4 = icmp eq i32 %x3, %u
   %x26 = alloca i32, align 4
   %x27 = alloca i32, align 4
-  br i1 %x4, label %x29, label %x30
+  store i32 0, ptr %x26, align 4
+  store i32 46340, ptr %x27, align 4
+  br label %x28
 
-x29:
-  br label %x25
+x28:
+  %x2 = load i32, ptr %x26, align 4
+  %x3 = load i32, ptr %x27, align 4
+  %x4 = add i32 %x2, 1
+  %x5 = icmp eq i32 %x4, %x3
+  %x30 = alloca i32, align 4
+  %x31 = alloca i32, align 4
+  br i1 %x5, label %x33, label %x34
 
-  br label %x31
+x33:
+  br label %x29
 
-x30:
-  %x5 = add i32 %l, %u
-  %x6 = sdiv i32 %x5, 2
-  %x32 = alloca i32, align 4
-  %x33 = alloca i32, align 4
-  %x34 = alloca i32, align 4
-  store i32 %x6, ptr %x32, align 4
-  store i32 %x1, ptr %x33, align 4
-  store i32 1, ptr %x34, align 4
+  br label %x35
+
+x34:
+  %x6 = add i32 %x2, %x3
+  %x7 = sdiv i32 %x6, 2
+  %x36 = alloca i32, align 4
+  %x37 = alloca i32, align 4
+  %x38 = alloca i32, align 4
+  store i32 %x7, ptr %x36, align 4
+  store i32 2, ptr %x37, align 4
+  store i32 1, ptr %x38, align 4
+  br label %x39
+
+x39:
+  %x8 = load i32, ptr %x36, align 4
+  %x9 = load i32, ptr %x37, align 4
+  %x10 = load i32, ptr %x38, align 4
+  %x11 = icmp eq i32 %x9, 0
+  %x41 = alloca i32, align 4
+  %x42 = alloca i32, align 4
+  %x43 = alloca i32, align 4
+  br i1 %x11, label %x45, label %x46
+
+x45:
+  br label %x40
+
+  br label %x47
+
+x46:
+  %x12 = and i32 %x9, 1
+  %x13 = icmp sgt i32 %x12, 0
+  %x48 = alloca i32, align 4
+  br i1 %x13, label %x50, label %x51
+
+x50:
+  %x14 = mul i32 %x10, %x8
+  store i32 %x14, ptr %x48, align 4
+  br label %x52
+
+x51:
+
+  store i32 %x10, ptr %x48, align 4
+  br label %x52
+
+x52:
+  %x15 = load i32, ptr %x48, align 4
+  %x16 = mul i32 %x8, %x8
+  %x17 = sdiv i32 %x9, 2
+  store i32 %x16, ptr %x41, align 4
+  store i32 %x17, ptr %x42, align 4
+  store i32 %x15, ptr %x43, align 4
+  br label %x47
+
+x47:
+  %x18 = load i32, ptr %x41, align 4
+  %x19 = load i32, ptr %x42, align 4
+  %x20 = load i32, ptr %x43, align 4
+  store i32 %x18, ptr %x36, align 4
+  store i32 %x19, ptr %x37, align 4
+  store i32 %x20, ptr %x38, align 4
+  br label %x39
+
+x40:
+  %x21 = icmp sle i32 %x10, %x1
+  %x53 = alloca i32, align 4
+  %x54 = alloca i32, align 4
+  br i1 %x21, label %x56, label %x57
+
+x56:
+
+  store i32 %x7, ptr %x53, align 4
+  store i32 %x3, ptr %x54, align 4
+  br label %x58
+
+x57:
+
+  store i32 %x2, ptr %x53, align 4
+  store i32 %x7, ptr %x54, align 4
+  br label %x58
+
+x58:
+  %x22 = load i32, ptr %x53, align 4
+  %x23 = load i32, ptr %x54, align 4
+  store i32 %x22, ptr %x30, align 4
+  store i32 %x23, ptr %x31, align 4
   br label %x35
 
 x35:
-  %a = load i32, ptr %x32, align 4
-  %p = load i32, ptr %x33, align 4
-  %r = load i32, ptr %x34, align 4
-  %x7 = icmp eq i32 %p, 0
-  %x37 = alloca i32, align 4
-  %x38 = alloca i32, align 4
-  %x39 = alloca i32, align 4
-  br i1 %x7, label %x41, label %x42
+  %x24 = load i32, ptr %x30, align 4
+  %x25 = load i32, ptr %x31, align 4
+  store i32 %x24, ptr %x26, align 4
+  store i32 %x25, ptr %x27, align 4
+  br label %x28
 
-x41:
-  br label %x36
-
-  br label %x43
-
-x42:
-  %x8 = and i32 %p, 1
-  %x9 = icmp sgt i32 %x8, 0
-  %x44 = alloca i32, align 4
-  br i1 %x9, label %x46, label %x47
-
-x46:
-  %x10 = mul i32 %r, %a
-  store i32 %x10, ptr %x44, align 4
-  br label %x48
-
-x47:
-
-  store i32 %r, ptr %x44, align 4
-  br label %x48
-
-x48:
-  %x11 = load i32, ptr %x44, align 4
-  %x12 = mul i32 %a, %a
-  %x13 = sdiv i32 %p, 2
-  store i32 %x12, ptr %x37, align 4
-  store i32 %x13, ptr %x38, align 4
-  store i32 %x11, ptr %x39, align 4
-  br label %x43
-
-x43:
-  %x14 = load i32, ptr %x37, align 4
-  %x15 = load i32, ptr %x38, align 4
-  %x16 = load i32, ptr %x39, align 4
-  store i32 %x14, ptr %x32, align 4
-  store i32 %x15, ptr %x33, align 4
-  store i32 %x16, ptr %x34, align 4
-  br label %x35
-
-x36:
-  %x17 = icmp sgt i32 %r, %x2
-  %x49 = alloca i32, align 4
-  %x50 = alloca i32, align 4
-  br i1 %x17, label %x52, label %x53
-
-x52:
-
-  store i32 %l, ptr %x49, align 4
-  store i32 %x6, ptr %x50, align 4
-  br label %x54
-
-x53:
-
-  store i32 %x6, ptr %x49, align 4
-  store i32 %u, ptr %x50, align 4
-  br label %x54
-
-x54:
-  %x18 = load i32, ptr %x49, align 4
-  %x19 = load i32, ptr %x50, align 4
-  store i32 %x18, ptr %x26, align 4
-  store i32 %x19, ptr %x27, align 4
-  br label %x31
-
-x31:
-  %x20 = load i32, ptr %x26, align 4
-  %x21 = load i32, ptr %x27, align 4
-  store i32 %x20, ptr %x22, align 4
-  store i32 %x21, ptr %x23, align 4
-  br label %x24
-
-x25:
-  call void @print(i32 noundef %l)
+x29:
+  call void @print(i32 noundef %x2)
   ret i32 0
 }
 
