@@ -6,9 +6,11 @@ import scala.io.Source
   val str = src.mkString
   src.close()
   term.run(Input(str, 0)) match
-    case Result.Fail => println("Parse failed")
+    case Result.Fail => println("文件的语法有问题！")
     case Result.Success(res, rem) =>
-      val TmPack(tm, ty) = infer(Ctx.empty, res)
-      val pk = pEval(Env.empty, tm)
-      output(s"$pk", to)
-      println("Compilation succeeds!")
+      try
+        val TmPack(tm, ty) = infer(Ctx.empty, res)
+        val pk = pEval(Env.empty, tm)
+        output(s"$pk", to)
+        println("编译成功！")
+      catch case e => println(e)

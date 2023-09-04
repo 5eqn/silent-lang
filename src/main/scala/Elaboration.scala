@@ -48,7 +48,9 @@ def infer(ctx: Ctx, term: Raw): TmPack = term match
     val TmPack(rtm, rty) = infer(ctx, rhs)
 
     // 加号两边都得是 i32 才能相加
-    val resTy = oprt.infer(lty, rty)
+    oprt.check(lhs, lty)
+    oprt.check(rhs, rty)
+    val resTy = oprt.retTy
     TmPack(Term.Mid(oprt, ltm, rtm, lty), resTy)
 
   // 赋值语句直接转换成语境
@@ -70,7 +72,7 @@ def infer(ctx: Ctx, term: Raw): TmPack = term match
         ctx.bind(name(0), ty)
 
       // 其他情况全部寄掉
-      case (len, _) => throw Error.CountMismatch(value, len)
+      case (len, _) => throw Error.CountMismatch(value)
 
     // 检查递归体内语句是否正确
     val rtm = recVal match
@@ -105,9 +107,10 @@ def infer(ctx: Ctx, term: Raw): TmPack = term match
     TmPack(Term.Tup(tms), Type.Tup(tys))
 
 // 检查某 Raw 是否是给定类型
-def check(ctx: Ctx, term: Raw, ty: Type): Term =
-  val TmPack(tm, expected) = infer(ctx, term)
-  unify(ty, expected)
+def check(ctx: Ctx, term: Raw, tyExp: Type): Term =
+  val TmPack(tm, tyInf) = infer(ctx, term)
+  try unify(tyExp, tyInf)
+  catch case UnifyError() => throw Error.TypeMismatch(term, tyExp, tyInf)
   tm
 
 // 检查两个类型能不能被看成相同
@@ -119,4 +122,4 @@ def unify(lhs: Type, rhs: Type): Type =
     case (_, Type.Any) => lhs
 
     // 否则两个类型必须要严格相同
-    case _ => if lhs != rhs then throw new Exception("type mismatch") else lhs
+    case _ => if lhs != rhs then throw UnifyError() else lhs

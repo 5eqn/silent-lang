@@ -1,5 +1,24 @@
+// 位置
+case class Position(line: Int, col: Int, content: String)
+
+object Position:
+  def empty = Position(1, 1, "Offset is out of bounds")
+
 // 带语义的输入
 case class Input(source: String, offset: Int):
+  def pos: Position =
+    val lines = source.split('\n')
+    var currentOffset = 0
+    val lineAndOffset = lines.zipWithIndex.flatMap((line, lineNum) =>
+      val lineEnd = currentOffset + line.length + 1
+      if (offset >= currentOffset && offset < lineEnd)
+        val colNum = offset - currentOffset + 1
+        Some(Position(lineNum + 1, colNum, line))
+      else
+        currentOffset = lineEnd
+        None
+    )
+    lineAndOffset.headOption.getOrElse(Position.empty)
   def headOption =
     if source.length() == offset then None else Some(source(offset))
   def tail = Input(source, offset + 1)
@@ -7,7 +26,7 @@ case class Input(source: String, offset: Int):
     if (source.startsWith(p, offset)) then
       Some(Input(source, offset + p.length))
     else None
-  def trim() =
+  def trimmed =
     var from = offset
     val to = source.length()
     while (from < to && source(from).isWhitespace)
@@ -15,7 +34,14 @@ case class Input(source: String, offset: Int):
     Input(source, from)
 
 // 范围
-case class Range(from: Input, to: Input)
+case class Range(from: Input, to: Input):
+  override def toString(): String =
+    val fp = from.pos
+    val tp = to.pos
+    val fc = fp.col - 1
+    val tc = if fp.line == tp.line then tp.col - 1 else fp.content.length()
+    val sel = " " * fc + "^" * (tc - fc)
+    s"第 ${fp.line} 行 ${fp.col} 列有错误：\n | ${fp.content}\n | $sel"
 
 trait Ranged:
   var range = Range(Input("", 0), Input("", 0))
@@ -79,7 +105,7 @@ case class Parser[A](run: Input => Result[A]):
 // 一些分析函数
 def success[A](res: A) = Parser(str => Result.Success(res, str))
 
-def ws = Parser(str => Result.Success((), str.trim()))
+def ws = Parser(str => Result.Success((), str.trimmed))
 
 def exact(exp: Char) = Parser(str =>
   str.headOption match
