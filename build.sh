@@ -1,1 +1,1 @@
-scala-cli --power package src -o target/silent
+scala-cli --power package src -o target/silent -f
