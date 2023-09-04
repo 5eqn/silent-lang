@@ -18,44 +18,56 @@ enum Oprt:
   case Any
 
   // 检查操作符两端的类型是否合法，如果合法，返回操作结果的类型
-  def infer(a: Type, b: Type) = (this, a, b) match
-    case (Add, Type.I32, Type.I32) => Type.I32
-    case (Sub, Type.I32, Type.I32) => Type.I32
-    case (Mul, Type.I32, Type.I32) => Type.I32
-    case (Div, Type.I32, Type.I32) => Type.I32
-    case (Mod, Type.I32, Type.I32) => Type.I32
-    case (And, Type.I32, Type.I32) => Type.I32
-    case (Or, Type.I32, Type.I32)  => Type.I32
-    case (Xor, Type.I32, Type.I32) => Type.I32
-    case (Gt, Type.I32, Type.I32)  => Type.Boo
-    case (Lt, Type.I32, Type.I32)  => Type.Boo
-    case (Ge, Type.I32, Type.I32)  => Type.Boo
-    case (Le, Type.I32, Type.I32)  => Type.Boo
-    case (Eq, Type.I32, Type.I32)  => Type.Boo
-    case (Ne, Type.I32, Type.I32)  => Type.Boo
-    case (All, Type.Boo, Type.Boo) => Type.Boo
-    case (Any, Type.Boo, Type.Boo) => Type.Boo
+  def infer(a: Type, b: Type) = (a, b) match
+    case (Type.I32, Type.I32) =>
+      this match
+        case Add => Type.I32
+        case Sub => Type.I32
+        case Mul => Type.I32
+        case Div => Type.I32
+        case Mod => Type.I32
+        case And => Type.I32
+        case Or  => Type.I32
+        case Xor => Type.I32
+        case Gt  => Type.Boo
+        case Lt  => Type.Boo
+        case Ge  => Type.Boo
+        case Le  => Type.Boo
+        case Eq  => Type.Boo
+        case Ne  => Type.Boo
+        case _   => throw new Exception("operator type mismatch")
+    case (Type.Boo, Type.Boo) =>
+      this match
+        case All => Type.Boo
+        case Any => Type.Boo
+        case _   => throw new Exception("operator type mismatch")
     case _ => throw new Exception("operator type mismatch")
 
   // 给定操作符两边的值，尝试化简
-  def tryEval(a: IRVal, b: IRVal) = (this, a, b) match
-    case (Add, IRVal.Num(a), IRVal.Num(b)) => Some(IRVal.Num(a + b))
-    case (Sub, IRVal.Num(a), IRVal.Num(b)) => Some(IRVal.Num(a - b))
-    case (Mul, IRVal.Num(a), IRVal.Num(b)) => Some(IRVal.Num(a * b))
-    case (Div, IRVal.Num(a), IRVal.Num(b)) => Some(IRVal.Num(a / b))
-    case (Mod, IRVal.Num(a), IRVal.Num(b)) => Some(IRVal.Num(a % b))
-    case (And, IRVal.Num(a), IRVal.Num(b)) => Some(IRVal.Num(a & b))
-    case (Or, IRVal.Num(a), IRVal.Num(b))  => Some(IRVal.Num(a | b))
-    case (Xor, IRVal.Num(a), IRVal.Num(b)) => Some(IRVal.Num(a ^ b))
-    case (Gt, IRVal.Num(a), IRVal.Num(b))  => Some(IRVal.Boo(a > b))
-    case (Lt, IRVal.Num(a), IRVal.Num(b))  => Some(IRVal.Boo(a < b))
-    case (Ge, IRVal.Num(a), IRVal.Num(b))  => Some(IRVal.Boo(a >= b))
-    case (Le, IRVal.Num(a), IRVal.Num(b))  => Some(IRVal.Boo(a <= b))
-    case (Eq, IRVal.Num(a), IRVal.Num(b))  => Some(IRVal.Boo(a == b))
-    case (Ne, IRVal.Num(a), IRVal.Num(b))  => Some(IRVal.Boo(a != b))
-    case (All, IRVal.Boo(a), IRVal.Boo(b)) => Some(IRVal.Boo(a && b))
-    case (Any, IRVal.Boo(a), IRVal.Boo(b)) => Some(IRVal.Boo(a || b))
-    case _                                 => None
+  def tryEval(a: IRVal, b: IRVal) = (a, b) match
+    case (IRVal.Num(x), IRVal.Num(y)) =>
+      this match
+        case Add => Some(IRVal.Num(x + y))
+        case Sub => Some(IRVal.Num(x - y))
+        case Mul => Some(IRVal.Num(x * y))
+        case Div => Some(IRVal.Num(x / y))
+        case Mod => Some(IRVal.Num(x % y))
+        case And => Some(IRVal.Num(x & y))
+        case Or  => Some(IRVal.Num(x | y))
+        case Xor => Some(IRVal.Num(x ^ y))
+        case Gt  => Some(IRVal.Boo(x > y))
+        case Lt  => Some(IRVal.Boo(x < y))
+        case Ge  => Some(IRVal.Boo(x >= y))
+        case Le  => Some(IRVal.Boo(x <= y))
+        case Eq  => Some(IRVal.Boo(x == y))
+        case Ne  => Some(IRVal.Boo(x != y))
+        case _   => None
+    case (IRVal.Boo(x), IRVal.Boo(y)) =>
+      this match
+        case All => Some(IRVal.Boo(x && y))
+        case Any => Some(IRVal.Boo(x || y))
+        case _   => None
+    case _ => None
 
   // 转化为 LLVM-IR 语句
   def compile(ty: Type, x: IRVal, y: IRVal) = this match
