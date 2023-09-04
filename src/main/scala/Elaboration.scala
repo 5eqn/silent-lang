@@ -12,7 +12,7 @@ def infer(ctx: Ctx, term: Raw): TmPack = term match
   // 输出的参数类型暂时只能是 i32
   case Raw.Prt(arg) =>
     val TmPack(tm, ty) = infer(ctx, arg)
-    if ty != Type.I32 then throw new Exception("can't print non-number")
+    if ty != Type.I32 then throw Error.TypeMismatch(arg, Type.I32, ty)
     TmPack(Term.Prt(tm, ty), ty)
 
   // 数字的类型一定是 i32
@@ -39,7 +39,8 @@ def infer(ctx: Ctx, term: Raw): TmPack = term match
       case Type.Fun(from, to) =>
         val atm = check(ctx, arg, from)
         TmPack(Term.App(ftm, atm), to)
-      case _ => throw new Exception("can't call non-function")
+      case _ =>
+        throw Error.TypeMismatch(func, Type.Fun(Type.Any, Type.Any), fty)
 
   // 加法类型容易通过参数求出
   case Raw.Mid(oprt, lhs, rhs) =>
@@ -69,7 +70,7 @@ def infer(ctx: Ctx, term: Raw): TmPack = term match
         ctx.bind(name(0), ty)
 
       // 其他情况全部寄掉
-      case _ => throw new Exception("let spine length mismatch")
+      case (len, _) => throw Error.CountMismatch(value, len)
 
     // 检查递归体内语句是否正确
     val rtm = recVal match
@@ -85,7 +86,7 @@ def infer(ctx: Ctx, term: Raw): TmPack = term match
     val TmPack(ctm, cty) = infer(ctx, cond)
 
     // 比较的依据必须是一个布尔值
-    if cty != Type.Boo then throw new Exception("invalid comparison")
+    if cty != Type.Boo then throw Error.TypeMismatch(cond, Type.Boo, cty)
     val TmPack(xtm, xty) = infer(ctx, x)
     val TmPack(ytm, yty) = infer(ctx, y)
 

@@ -108,7 +108,7 @@ enum Oprt:
     case Any => "||"
 
 // Silent-Lang 表层语法树
-enum Raw extends Positional:
+enum Raw extends Ranged:
   case Inp
   case Brk
   case Prt(arg: Raw)
