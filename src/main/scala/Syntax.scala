@@ -17,31 +17,46 @@ enum Oprt:
   case All
   case Any
 
-  // 检查操作符两端的类型是否合法，如果合法，返回操作结果的类型
-  def infer(a: Type, b: Type) = (a, b) match
-    case (Type.I32, Type.I32) =>
-      this match
-        case Add => Type.I32
-        case Sub => Type.I32
-        case Mul => Type.I32
-        case Div => Type.I32
-        case Mod => Type.I32
-        case And => Type.I32
-        case Or  => Type.I32
-        case Xor => Type.I32
-        case Gt  => Type.Boo
-        case Lt  => Type.Boo
-        case Ge  => Type.Boo
-        case Le  => Type.Boo
-        case Eq  => Type.Boo
-        case Ne  => Type.Boo
-        case _   => throw new Exception("operator type mismatch")
-    case (Type.Boo, Type.Boo) =>
-      this match
-        case All => Type.Boo
-        case Any => Type.Boo
-        case _   => throw new Exception("operator type mismatch")
-    case _ => throw new Exception("operator type mismatch")
+  // 检查操作符参数类型是否合法
+  def check(tm: Raw, ty: Type): Unit =
+    val exp = this match
+      case Add => Type.I32
+      case Sub => Type.I32
+      case Mul => Type.I32
+      case Div => Type.I32
+      case Mod => Type.I32
+      case And => Type.I32
+      case Or  => Type.I32
+      case Xor => Type.I32
+      case Gt  => Type.I32
+      case Lt  => Type.I32
+      case Ge  => Type.I32
+      case Le  => Type.I32
+      case Eq  => Type.I32
+      case Ne  => Type.I32
+      case All => Type.Boo
+      case Any => Type.Boo
+    try unify(exp, ty)
+    catch case UnifyError() => throw Error.TypeMismatch(tm, exp, ty)
+
+  // 获取操作符的返回值类型
+  def retTy = this match
+    case Add => Type.I32
+    case Sub => Type.I32
+    case Mul => Type.I32
+    case Div => Type.I32
+    case Mod => Type.I32
+    case And => Type.I32
+    case Or  => Type.I32
+    case Xor => Type.I32
+    case Gt  => Type.Boo
+    case Lt  => Type.Boo
+    case Ge  => Type.Boo
+    case Le  => Type.Boo
+    case Eq  => Type.Boo
+    case Ne  => Type.Boo
+    case All => Type.Boo
+    case Any => Type.Boo
 
   // 给定操作符两边的值，尝试化简
   def tryEval(a: IRVal, b: IRVal) = (a, b) match

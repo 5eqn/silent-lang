@@ -24,7 +24,7 @@ English version: [README-en.md](README-en.md)
 - [x] typecheck for function
 - [x] more operators
 - [ ] comment
-- [ ] pretty errors
+- [x] pretty errors
 - [x] tail-rec
 - [x] tuple
 - [ ] use llvm binding
