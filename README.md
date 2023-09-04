@@ -23,7 +23,7 @@ English version: [README-en.md](README-en.md)
 - [x] left-rec syntax
 - [x] typecheck for function
 - [x] more operators
-- [ ] comment
+- [x] comment
 - [x] pretty errors
 - [x] tail-rec
 - [x] tuple

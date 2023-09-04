@@ -5,7 +5,7 @@ import scala.io.Source
   val src = Source.fromFile(from)
   val str = src.mkString
   src.close()
-  term.run(Input(str, 0)) match
+  source.run(Input(str, 0)) match
     case Result.Fail => println("文件的语法有问题！")
     case Result.Success(res, rem) =>
       try
