@@ -28,10 +28,10 @@ declare i32 @printf(ptr noundef, ...) #1
 ; Function Attrs: noinline nounwind optnone sspstrong uwtable
 define dso_local i32 @main() #0 {
   %x1 = call i32 @input()
-  %x2 = add nsw i32 %x1, %x1
-  %x3 = add nsw i32 %x2, %x2
-  %x4 = add nsw i32 %x3, 5
-  %x5 = add nsw i32 %x4, 1
+  %x2 = add i32 %x1, %x1
+  %x3 = add i32 %x2, %x2
+  %x4 = add i32 %x3, 5
+  %x5 = add i32 %x4, 1
   call void @print(i32 noundef %x5)
   ret i32 0
 }

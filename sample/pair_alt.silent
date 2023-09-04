@@ -1,4 +1,0 @@
-let a = input in
-let pair = if a == 1 then 114, 514 else 1919, 810 in
-let b, c = pair in
-print(c)

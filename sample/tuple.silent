@@ -1,7 +1,7 @@
-let a, b = 3, input in
-let c, d = input, 4 in
-let pair = 1, 1 in
+let a, b = 3, input
+let c, d = input, 4
+let pair = 1, 1
 let add = (p: int, int) =>
-  let x, y = p in
-  x + y in
+  let x, y = p
+  x + y
 print(add(pair) + a + d + c + b)
