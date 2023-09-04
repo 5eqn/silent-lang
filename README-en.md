@@ -4,6 +4,10 @@ Silent-lang is a language targeting Competitive Programming. It compiles to LLVM
 
 The name is from a character of *Slay the Spire*, The Silent.
 
+### usage
+
+`silent fn.silent fn.ll`
+
 ### samples
 
 Please refer to [samples](sample/).

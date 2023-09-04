@@ -6,6 +6,14 @@ English version: [README-en.md](README-en.md)
 
 名字来源：「杀戮尖塔」游戏角色，寂静猎手。
 
+### 使用方式
+
+1. 确保自己安装了 Java，且在命令行中使用 `java` 不会被告知该命令不存在
+2. 在 [Releases](https://github.com/5eqn/silent-lang/releases) 中下载从 jar 包封装出来的可执行文件
+3. 在命令行中直接执行下载到的文件，例如 `./Downloads/silent-launcher-jar`，如果看到 `Illegal command line: more arguments expected`，说明运行成功
+4. 要编译一个文件，请指定源文件和输出路径，例如 `./silent-launcher-jar fn.silent fn.ll`
+5. 可以考虑把 `silent-launcher-jar` 改名为 `silent` 并加入环境变量，这样可以直接通过 `silent` 来调用该程序
+
 ### roadmap
 
 - [x] partial evaluation
