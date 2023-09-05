@@ -6,6 +6,8 @@ object Position:
 
 // 带位置的输入
 case class Input(source: String, offset: Int):
+
+  // 将 offset 转化为带行和列的位置
   def pos: Position =
     val lines = source.split('\n')
     var currentOffset = 0
@@ -19,9 +21,13 @@ case class Input(source: String, offset: Int):
         None
     )
     lineAndOffset.headOption.getOrElse(Position.empty)
+
+  // 递归模块封装
   def headOption =
     if source.length() == offset then None else Some(source(offset))
   def tail = Input(source, offset + 1)
+
+  // 处理模块封装
   def stripPrefix(p: String) =
     if (source.startsWith(p, offset)) then
       Some(Input(source, offset + p.length))
@@ -30,6 +36,12 @@ case class Input(source: String, offset: Int):
     var from = offset
     val to = source.length()
     while (from < to && pred(source(from)))
+      from += 1
+    Input(source, from)
+  def until(p: String) =
+    var from = offset
+    val to = source.length()
+    while (from < to && !source.startsWith(p, from))
       from += 1
     Input(source, from)
 
@@ -103,12 +115,29 @@ case class Parser[A](run: Input => Result[A]):
   )
 
 // 注释和空白
-def comment: Parser[Unit] = for {
+def lineComment: Parser[Unit] = for {
   _ <- exact("😅") | exact("//")
   _ <- line
+} yield ()
+
+def blockCommentEmoji: Parser[Unit] = for {
+  _ <- exact("👉")
+  _ <- until("👈")
+  _ <- exact("👈")
+} yield ()
+
+def blockCommentNormal: Parser[Unit] = for {
+  _ <- exact("/*")
+  _ <- until("*/")
+  _ <- exact("*/")
+} yield ()
+
+def comment: Parser[Unit] = for {
+  _ <- lineComment | blockCommentNormal | blockCommentEmoji
   _ <- ws
 } yield ()
 
+def until(p: String) = Parser(str => Result.Success((), str.until(p)))
 def line = Parser(str => Result.Success((), str.trim(_ != '\n')))
 def space = Parser(str => Result.Success((), str.trim(_.isWhitespace)))
 def ws = space.flatMap(_ => optional(comment))
