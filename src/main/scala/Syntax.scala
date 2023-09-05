@@ -5,6 +5,8 @@ enum Oprt:
   case Mul
   case Div
   case Mod
+  case Shr
+  case Shl
   case And
   case Or
   case Xor
@@ -25,6 +27,8 @@ enum Oprt:
       case Mul => Type.I32
       case Div => Type.I32
       case Mod => Type.I32
+      case Shr => Type.I32
+      case Shl => Type.I32
       case And => Type.I32
       case Or  => Type.I32
       case Xor => Type.I32
@@ -46,6 +50,8 @@ enum Oprt:
     case Mul => Type.I32
     case Div => Type.I32
     case Mod => Type.I32
+    case Shr => Type.I32
+    case Shl => Type.I32
     case And => Type.I32
     case Or  => Type.I32
     case Xor => Type.I32
@@ -67,6 +73,8 @@ enum Oprt:
         case Mul => Some(IRVal.Num(x * y))
         case Div => Some(IRVal.Num(x / y))
         case Mod => Some(IRVal.Num(x % y))
+        case Shr => Some(IRVal.Num(x >> y))
+        case Shl => Some(IRVal.Num(x << y))
         case And => Some(IRVal.Num(x & y))
         case Or  => Some(IRVal.Num(x | y))
         case Xor => Some(IRVal.Num(x ^ y))
@@ -91,6 +99,8 @@ enum Oprt:
     case Mul => s"mul $ty $x, $y"
     case Div => s"sdiv $ty $x, $y"
     case Mod => s"srem $ty $x, $y"
+    case Shr => s"ashr $ty $x, $y"
+    case Shl => s"shl $ty $x, $y"
     case And => s"and $ty $x, $y"
     case Or  => s"or $ty $x, $y"
     case Xor => s"xor $ty $x, $y"
@@ -110,6 +120,8 @@ enum Oprt:
     case Mul => "*"
     case Div => "/"
     case Mod => "%"
+    case Shr => ">>"
+    case Shl => "<<"
     case And => "&"
     case Or  => "|"
     case Xor => "^"
