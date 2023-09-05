@@ -1,103 +1,3 @@
-// 位置
-case class Position(line: Int, col: Int, content: String)
-
-object Position:
-  def empty = Position(1, 1, "Offset is out of bounds")
-
-// 带位置的输入
-case class Input(source: String, offset: Int):
-
-  // 获取下一个位置的输入
-  def next: Input = Input(source, offset + 1)
-
-  // 获取两个输入中比较后的一个
-  def max(rhs: Input) =
-    val roff = rhs.offset
-    Input(source, if roff > offset then roff else offset)
-
-  // 将 offset 转化为带行和列的位置
-  def pos: Position =
-    val lines = source.split('\n')
-    var currentOffset = 0
-    val lineAndOffset = lines.zipWithIndex.flatMap((line, lineNum) =>
-      val lineEnd = currentOffset + line.length + 1
-      if (offset >= currentOffset && offset < lineEnd)
-        val colNum = offset - currentOffset + 1
-        Some(Position(lineNum + 1, colNum, line))
-      else
-        currentOffset = lineEnd
-        None
-    )
-    lineAndOffset.headOption.getOrElse(Position.empty)
-
-  // 递归模块封装
-  def headOption =
-    if source.length() == offset then None else Some(source(offset))
-  def tail = Input(source, offset + 1)
-
-  // 处理模块封装
-  def stripPrefix(p: String) =
-    if (source.startsWith(p, offset)) then
-      Some(Input(source, offset + p.length))
-    else None
-  def trim(pred: Char => Boolean) =
-    var from = offset
-    val to = source.length()
-    while (from < to && pred(source(from)))
-      from += 1
-    Input(source, from)
-  def until(p: String) =
-    var from = offset
-    val to = source.length()
-    while (from < to && !source.startsWith(p, from))
-      from += 1
-    Input(source, from)
-
-// 范围
-case class Range(from: Input, to: Input):
-  override def toString(): String =
-    val fp = from.pos
-    val tp = to.pos
-    val fc = fp.col - 1
-    val tc = if fp.line == tp.line then tp.col - 1 else fp.content.length()
-    val sel = " " * fc + "^" * (tc - fc)
-    s"第 ${fp.line} 行 ${fp.col} 列有错误：\n | ${fp.content}\n | $sel"
-
-trait Ranged:
-  var range = Range(Input("", 0), Input("", 0))
-
-// 可以获得范围的 Parser
-def ranged[A <: Ranged](p: Parser[A]) = Parser(str =>
-  p.run(str) match
-    case Result.Success(res, rem) =>
-      res.range = Range(str, rem)
-      Result.Success(res, rem)
-    case Result.Fail(at) => Result.Fail(at)
-)
-
-// 一些辅助函数
-def isNumeric(ch: Char) = ch >= '0' && ch <= '9'
-def isAlphabetic(ch: Char) = ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z'
-
-def collect(pred: Char => Boolean, str: Input, acc: String): (String, Input) =
-  str.headOption match
-    case Some(hd) if pred(hd) => collect(pred, str.tail, acc + hd);
-    case _                    => (acc, str)
-
-def keywords = List(
-  "lam",
-  "let",
-  "rec",
-  "app",
-  "if",
-  "then",
-  "else",
-  "int",
-  "input",
-  "print",
-  "nope"
-)
-
 // 处理结果
 enum Result[+A]:
   case Success(res: A, rem: Input)
@@ -123,6 +23,15 @@ case class Parser[A](run: Input => Result[A]):
           case Result.Success(res, rem) => Result.Success(res, rem)
           case Result.Fail(another)     => Result.Fail(at.max(another))
   )
+
+// 可以获得范围的 Parser
+def ranged[A <: Ranged](p: Parser[A]) = Parser(str =>
+  p.run(str) match
+    case Result.Success(res, rem) =>
+      res.range = Range(str, rem)
+      Result.Success(res, rem)
+    case Result.Fail(at) => Result.Fail(at)
+)
 
 // 注释和空白
 def lineComment: Parser[Unit] = for {
@@ -152,21 +61,24 @@ def line = Parser(str => Result.Success((), str.trim(_ != '\n')))
 def space = Parser(str => Result.Success((), str.trim(_.isWhitespace)))
 def ws = space.flatMap(_ => optional(comment))
 
-// 一些 Parser
+// 直接成功的 Parser
 def success[A](res: A) = Parser(str => Result.Success(res, str))
 
+// 直接读入给定字符
 def exact(exp: Char) = Parser(str =>
   str.headOption match
     case Some(hd) if hd == exp => Result.Success(hd, str.tail)
     case _                     => Result.Fail(str)
 )
 
+// 直接读入给定字符串
 def exact(exp: String) = Parser(str =>
   str.stripPrefix(exp) match
     case Some(rem) => Result.Success(exp, rem)
     case _         => Result.Fail(str)
 )
 
+// 读入一个数字
 def number = Parser(str =>
   val (res, rem) = collect(isNumeric, str, "")
   if res.length() > 0
@@ -174,18 +86,21 @@ def number = Parser(str =>
   else Result.Fail(str)
 )
 
+//读入一个变量名
 def ident = Parser(str =>
-  val (res, rem) = collect(isAlphabetic, str, "")
+  val (res, rem) = collect(isNotSpecial, str, "")
   if res.length() > 0 && !keywords.contains(res)
   then Result.Success(res, rem)
   else Result.Fail(str)
-) | exact("_")
+)
 
+// 读入以逗号分隔的一系列东西
 def some[A](p: Parser[A]) = for {
   lhs <- p
   res <- someRest(List(lhs), p)
 } yield res
 
+// 读入以逗号分隔的一系列东西，但是开头是逗号
 def someRest[A](lhs: List[A], p: Parser[A]): Parser[List[A]] = (for {
   _ <- exact(',')
   _ <- ws
@@ -193,6 +108,7 @@ def someRest[A](lhs: List[A], p: Parser[A]): Parser[List[A]] = (for {
   res <- someRest(lhs :+ rhs, p)
 } yield res) | success(lhs)
 
+// 选择性地读入一个东西
 def optional[A](p: Parser[A]) = p.map(Some(_)) | success(None)
 
 // 操作符列表

@@ -31,11 +31,11 @@ define dso_local i32 @main() #0 {
   %x2 = mul i32 %x1, %x1
   %x3 = srem i32 %x2, 6
   %x4 = mul i32 %x3, 5
-  %x5 = add i32 %x4, 1
+  %x5 = sub i32 0, %x4
   call void @print(i32 noundef %x5)
   %x6 = call i32 @input()
   %x7 = add i32 1, %x6
-  %x8 = add i32 5, %x7
+  %x8 = add i32 9, %x7
   call void @print(i32 noundef %x8)
   %x9 = call i32 @input()
   %x63 = alloca i32, align 4
