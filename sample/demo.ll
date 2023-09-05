@@ -33,204 +33,244 @@ define dso_local i32 @main() #0 {
   %x4 = mul i32 %x3, 5
   %x5 = add i32 %x4, 1
   call void @print(i32 noundef %x5)
-  call void @print(i32 noundef 114)
-  %x6 = add i32 1, %x1
-  call void @print(i32 noundef %x6)
-  %x7 = icmp sgt i32 %x1, 5
-  %x49 = alloca i32, align 4
-  %x50 = alloca i32, align 4
-  br i1 %x7, label %x52, label %x53
+  %x6 = call i32 @input()
+  %x7 = add i32 1, %x6
+  %x8 = add i32 5, %x7
+  call void @print(i32 noundef %x8)
+  %x9 = call i32 @input()
+  %x63 = alloca i32, align 4
+  %x64 = alloca i32, align 4
+  store i32 0, ptr %x63, align 4
+  store i32 %x9, ptr %x64, align 4
+  br label %x65
 
-x52:
+x65:
+  %x10 = load i32, ptr %x63, align 4
+  %x11 = load i32, ptr %x64, align 4
+  %x12 = icmp eq i32 %x11, 0
+  %x67 = alloca i32, align 4
+  %x68 = alloca i32, align 4
+  br i1 %x12, label %x70, label %x71
 
-  store i32 4, ptr %x49, align 4
-  store i32 4, ptr %x50, align 4
-  br label %x54
+x70:
+  br label %x66
 
-x53:
+  br label %x72
 
-  store i32 8, ptr %x49, align 4
-  store i32 8, ptr %x50, align 4
-  br label %x54
-
-x54:
-  %x8 = load i32, ptr %x49, align 4
-  %x9 = load i32, ptr %x50, align 4
-  %x10 = mul i32 %x8, %x9
-  call void @print(i32 noundef %x10)
-  %x55 = alloca i32, align 4
-  %x56 = alloca i32, align 4
-  store i32 0, ptr %x55, align 4
-  store i32 %x1, ptr %x56, align 4
-  br label %x57
-
-x57:
-  %x11 = load i32, ptr %x55, align 4
-  %x12 = load i32, ptr %x56, align 4
-  %x13 = icmp eq i32 %x12, 0
-  %x59 = alloca i32, align 4
-  %x60 = alloca i32, align 4
-  br i1 %x13, label %x62, label %x63
-
-x62:
-  br label %x58
-
-  br label %x64
-
-x63:
-  %x14 = add i32 %x11, %x12
-  %x15 = sub i32 %x12, 1
-  store i32 %x14, ptr %x59, align 4
-  store i32 %x15, ptr %x60, align 4
-  br label %x64
-
-x64:
-  %x16 = load i32, ptr %x59, align 4
-  %x17 = load i32, ptr %x60, align 4
-  store i32 %x16, ptr %x55, align 4
-  store i32 %x17, ptr %x56, align 4
-  br label %x57
-
-x58:
-  call void @print(i32 noundef %x11)
-  %x65 = alloca i32, align 4
-  %x66 = alloca i32, align 4
-  store i32 1, ptr %x65, align 4
-  store i32 %x1, ptr %x66, align 4
-  br label %x67
-
-x67:
-  %x18 = load i32, ptr %x65, align 4
-  %x19 = load i32, ptr %x66, align 4
-  %x20 = icmp eq i32 %x19, 1
-  %x69 = alloca i32, align 4
-  %x70 = alloca i32, align 4
-  br i1 %x20, label %x72, label %x73
+x71:
+  %x13 = add i32 %x10, %x11
+  %x14 = sub i32 %x11, 1
+  store i32 %x13, ptr %x67, align 4
+  store i32 %x14, ptr %x68, align 4
+  br label %x72
 
 x72:
-  br label %x68
+  %x15 = load i32, ptr %x67, align 4
+  %x16 = load i32, ptr %x68, align 4
+  store i32 %x15, ptr %x63, align 4
+  store i32 %x16, ptr %x64, align 4
+  br label %x65
 
-  br label %x74
+x66:
+  call void @print(i32 noundef %x10)
+  %x17 = call i32 @input()
+  %x73 = alloca i32, align 4
+  %x74 = alloca i32, align 4
+  store i32 1, ptr %x73, align 4
+  store i32 %x17, ptr %x74, align 4
+  br label %x75
 
-x73:
+x75:
+  %x18 = load i32, ptr %x73, align 4
+  %x19 = load i32, ptr %x74, align 4
+  %x20 = icmp eq i32 %x19, 1
+  %x77 = alloca i32, align 4
+  %x78 = alloca i32, align 4
+  br i1 %x20, label %x80, label %x81
+
+x80:
+  br label %x76
+
+  br label %x82
+
+x81:
   %x21 = mul i32 %x18, %x19
   %x22 = sub i32 %x19, 1
-  store i32 %x21, ptr %x69, align 4
-  store i32 %x22, ptr %x70, align 4
-  br label %x74
+  store i32 %x21, ptr %x77, align 4
+  store i32 %x22, ptr %x78, align 4
+  br label %x82
 
-x74:
-  %x23 = load i32, ptr %x69, align 4
-  %x24 = load i32, ptr %x70, align 4
-  store i32 %x23, ptr %x65, align 4
-  store i32 %x24, ptr %x66, align 4
-  br label %x67
+x82:
+  %x23 = load i32, ptr %x77, align 4
+  %x24 = load i32, ptr %x78, align 4
+  store i32 %x23, ptr %x73, align 4
+  store i32 %x24, ptr %x74, align 4
+  br label %x75
 
-x68:
+x76:
   call void @print(i32 noundef %x18)
-  %x75 = alloca i32, align 4
-  %x76 = alloca i32, align 4
-  %x77 = alloca i32, align 4
-  store i32 1, ptr %x75, align 4
-  store i32 1, ptr %x76, align 4
-  store i32 %x1, ptr %x77, align 4
-  br label %x78
-
-x78:
-  %x25 = load i32, ptr %x75, align 4
-  %x26 = load i32, ptr %x76, align 4
-  %x27 = load i32, ptr %x77, align 4
-  %x28 = icmp slt i32 %x27, 2
-  %x80 = alloca i32, align 4
-  %x81 = alloca i32, align 4
-  %x82 = alloca i32, align 4
-  br i1 %x28, label %x84, label %x85
-
-x84:
-  br label %x79
-
-  br label %x86
-
-x85:
-  %x29 = add i32 %x25, %x26
-  %x30 = sub i32 %x27, 1
-  store i32 %x26, ptr %x80, align 4
-  store i32 %x29, ptr %x81, align 4
-  store i32 %x30, ptr %x82, align 4
+  %x25 = call i32 @input()
+  %x83 = alloca i32, align 4
+  %x84 = alloca i32, align 4
+  %x85 = alloca i32, align 4
+  store i32 1, ptr %x83, align 4
+  store i32 1, ptr %x84, align 4
+  store i32 %x25, ptr %x85, align 4
   br label %x86
 
 x86:
-  %x31 = load i32, ptr %x80, align 4
-  %x32 = load i32, ptr %x81, align 4
-  %x33 = load i32, ptr %x82, align 4
-  store i32 %x31, ptr %x75, align 4
-  store i32 %x32, ptr %x76, align 4
-  store i32 %x33, ptr %x77, align 4
-  br label %x78
-
-x79:
-  call void @print(i32 noundef %x26)
-  %x34 = call i32 @input()
-  %x35 = call i32 @input()
-  %x87 = alloca i32, align 4
+  %x26 = load i32, ptr %x83, align 4
+  %x27 = load i32, ptr %x84, align 4
+  %x28 = load i32, ptr %x85, align 4
+  %x29 = icmp sle i32 %x28, 2
   %x88 = alloca i32, align 4
   %x89 = alloca i32, align 4
-  store i32 %x34, ptr %x87, align 4
-  store i32 %x35, ptr %x88, align 4
-  store i32 1, ptr %x89, align 4
-  br label %x90
+  %x90 = alloca i32, align 4
+  br i1 %x29, label %x92, label %x93
 
-x90:
-  %x36 = load i32, ptr %x87, align 4
-  %x37 = load i32, ptr %x88, align 4
-  %x38 = load i32, ptr %x89, align 4
-  %x39 = icmp eq i32 %x37, 0
-  %x92 = alloca i32, align 4
-  %x93 = alloca i32, align 4
-  %x94 = alloca i32, align 4
-  br i1 %x39, label %x96, label %x97
+x92:
+  br label %x87
 
-x96:
-  br label %x91
+  br label %x94
 
-  br label %x98
+x93:
+  %x30 = add i32 %x26, %x27
+  %x31 = sub i32 %x28, 1
+  store i32 %x27, ptr %x88, align 4
+  store i32 %x30, ptr %x89, align 4
+  store i32 %x31, ptr %x90, align 4
+  br label %x94
 
-x97:
-  %x40 = and i32 %x37, 1
-  %x41 = icmp sgt i32 %x40, 0
-  %x99 = alloca i32, align 4
-  br i1 %x41, label %x101, label %x102
+x94:
+  %x32 = load i32, ptr %x88, align 4
+  %x33 = load i32, ptr %x89, align 4
+  %x34 = load i32, ptr %x90, align 4
+  store i32 %x32, ptr %x83, align 4
+  store i32 %x33, ptr %x84, align 4
+  store i32 %x34, ptr %x85, align 4
+  br label %x86
 
-x101:
-  %x42 = mul i32 %x38, %x36
-  store i32 %x42, ptr %x99, align 4
-  br label %x103
-
-x102:
-
-  store i32 %x38, ptr %x99, align 4
-  br label %x103
-
-x103:
-  %x43 = load i32, ptr %x99, align 4
-  %x44 = mul i32 %x36, %x36
-  %x45 = sdiv i32 %x37, 2
-  store i32 %x44, ptr %x92, align 4
-  store i32 %x45, ptr %x93, align 4
-  store i32 %x43, ptr %x94, align 4
+x87:
+  call void @print(i32 noundef %x27)
+  %x35 = call i32 @input()
+  %x36 = call i32 @input()
+  %x95 = alloca i32, align 4
+  %x96 = alloca i32, align 4
+  %x97 = alloca i32, align 4
+  store i32 %x35, ptr %x95, align 4
+  store i32 %x36, ptr %x96, align 4
+  store i32 1, ptr %x97, align 4
   br label %x98
 
 x98:
-  %x46 = load i32, ptr %x92, align 4
-  %x47 = load i32, ptr %x93, align 4
-  %x48 = load i32, ptr %x94, align 4
-  store i32 %x46, ptr %x87, align 4
-  store i32 %x47, ptr %x88, align 4
-  store i32 %x48, ptr %x89, align 4
-  br label %x90
+  %x37 = load i32, ptr %x95, align 4
+  %x38 = load i32, ptr %x96, align 4
+  %x39 = load i32, ptr %x97, align 4
+  %x40 = icmp eq i32 %x38, 0
+  %x100 = alloca i32, align 4
+  %x101 = alloca i32, align 4
+  %x102 = alloca i32, align 4
+  br i1 %x40, label %x104, label %x105
 
-x91:
-  call void @print(i32 noundef %x38)
+x104:
+  br label %x99
+
+  br label %x106
+
+x105:
+  %x41 = and i32 %x38, 1
+  %x42 = icmp sgt i32 %x41, 0
+  %x107 = alloca i32, align 4
+  br i1 %x42, label %x109, label %x110
+
+x109:
+  %x43 = mul i32 %x39, %x37
+  store i32 %x43, ptr %x107, align 4
+  br label %x111
+
+x110:
+
+  store i32 %x39, ptr %x107, align 4
+  br label %x111
+
+x111:
+  %x44 = load i32, ptr %x107, align 4
+  %x45 = mul i32 %x37, %x37
+  %x46 = sdiv i32 %x38, 2
+  store i32 %x45, ptr %x100, align 4
+  store i32 %x46, ptr %x101, align 4
+  store i32 %x44, ptr %x102, align 4
+  br label %x106
+
+x106:
+  %x47 = load i32, ptr %x100, align 4
+  %x48 = load i32, ptr %x101, align 4
+  %x49 = load i32, ptr %x102, align 4
+  store i32 %x47, ptr %x95, align 4
+  store i32 %x48, ptr %x96, align 4
+  store i32 %x49, ptr %x97, align 4
+  br label %x98
+
+x99:
+  call void @print(i32 noundef %x39)
+  %x50 = call i32 @input()
+  %x112 = alloca i32, align 4
+  %x113 = alloca i32, align 4
+  store i32 0, ptr %x112, align 4
+  store i32 46340, ptr %x113, align 4
+  br label %x114
+
+x114:
+  %x51 = load i32, ptr %x112, align 4
+  %x52 = load i32, ptr %x113, align 4
+  %x53 = add i32 %x51, 1
+  %x54 = icmp eq i32 %x53, %x52
+  %x116 = alloca i32, align 4
+  %x117 = alloca i32, align 4
+  br i1 %x54, label %x119, label %x120
+
+x119:
+  br label %x115
+
+  br label %x121
+
+x120:
+  %x55 = add i32 %x51, %x52
+  %x56 = sdiv i32 %x55, 2
+  %x57 = mul i32 %x56, %x56
+  %x58 = icmp sle i32 %x57, %x50
+  %x122 = alloca i32, align 4
+  %x123 = alloca i32, align 4
+  br i1 %x58, label %x125, label %x126
+
+x125:
+
+  store i32 %x56, ptr %x122, align 4
+  store i32 %x52, ptr %x123, align 4
+  br label %x127
+
+x126:
+
+  store i32 %x51, ptr %x122, align 4
+  store i32 %x56, ptr %x123, align 4
+  br label %x127
+
+x127:
+  %x59 = load i32, ptr %x122, align 4
+  %x60 = load i32, ptr %x123, align 4
+  store i32 %x59, ptr %x116, align 4
+  store i32 %x60, ptr %x117, align 4
+  br label %x121
+
+x121:
+  %x61 = load i32, ptr %x116, align 4
+  %x62 = load i32, ptr %x117, align 4
+  store i32 %x61, ptr %x112, align 4
+  store i32 %x62, ptr %x113, align 4
+  br label %x114
+
+x115:
+  call void @print(i32 noundef %x51)
   ret i32 0
 }
 
