@@ -184,7 +184,25 @@ print(z)
 
 #### 语法错误
 
-暂不支持定位。
+```
+😅 读入两个数字
+let x, y = input, input
+
+😅 加起来
+let z != x + ((a: int) => a)
+
+😅 输出
+print(z)
+```
+
+编译结果：
+
+```
+第 5 行 7 列有错误：
+ | let z != x + ((a: int) => a)
+ |       ^
+文件的语法有错误！
+```
 
 ### 使用方式
 
@@ -207,6 +225,8 @@ print(z)
 - [x] pretty errors
 - [x] tail-rec
 - [x] tuple
+- [x] track grammar mistake
+- [ ] allow utf-8 variable name
 - [ ] use llvm binding
 - [ ] vector
 - [ ] string

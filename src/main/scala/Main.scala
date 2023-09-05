@@ -6,7 +6,8 @@ import scala.io.Source
   val str = src.mkString
   src.close()
   source.run(Input(str, 0)) match
-    case Result.Fail => println("文件的语法有问题！")
+    case Result.Fail(at) =>
+      println(s"${Range(at, at.next)}\n文件的语法有错误！")
     case Result.Success(res, rem) =>
       try
         val TmPack(tm, ty) = infer(Ctx.empty, res)
