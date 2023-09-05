@@ -228,7 +228,7 @@ print(z)
 - [x] tail-rec
 - [x] tuple
 - [x] track grammar mistake
-- [ ] allow utf-8 variable names
+- [x] allow utf-8 variable names
 - [ ] benchmark
 - [ ] use llvm binding
 - [ ] vector
