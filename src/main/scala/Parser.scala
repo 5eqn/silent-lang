@@ -7,6 +7,14 @@ object Position:
 // 带位置的输入
 case class Input(source: String, offset: Int):
 
+  // 获取下一个位置的输入
+  def next: Input = Input(source, offset + 1)
+
+  // 获取两个输入中比较后的一个
+  def max(rhs: Input) =
+    val roff = rhs.offset
+    Input(source, if roff > offset then roff else offset)
+
   // 将 offset 转化为带行和列的位置
   def pos: Position =
     val lines = source.split('\n')
@@ -64,7 +72,7 @@ def ranged[A <: Ranged](p: Parser[A]) = Parser(str =>
     case Result.Success(res, rem) =>
       res.range = Range(str, rem)
       Result.Success(res, rem)
-    case Result.Fail => Result.Fail
+    case Result.Fail(at) => Result.Fail(at)
 )
 
 // 一些辅助函数
@@ -79,7 +87,6 @@ def collect(pred: Char => Boolean, str: Input, acc: String): (String, Input) =
 def keywords = List(
   "lam",
   "let",
-  "in",
   "rec",
   "app",
   "if",
@@ -94,24 +101,27 @@ def keywords = List(
 // 处理结果
 enum Result[+A]:
   case Success(res: A, rem: Input)
-  case Fail
+  case Fail(at: Input)
 
 // 分析模块
 case class Parser[A](run: Input => Result[A]):
   def map[B](cont: A => B) = Parser(str =>
     run(str) match
       case Result.Success(res, rem) => Result.Success(cont(res), rem)
-      case Result.Fail              => Result.Fail
+      case Result.Fail(at)          => Result.Fail(at)
   )
   def flatMap[B](cont: A => Parser[B]) = Parser(str =>
     run(str) match
       case Result.Success(res, rem) => cont(res).run(rem)
-      case Result.Fail              => Result.Fail
+      case Result.Fail(at)          => Result.Fail(at)
   )
   def |(another: Parser[A]) = Parser(str =>
     run(str) match
       case Result.Success(res, rem) => Result.Success(res, rem)
-      case Result.Fail              => another.run(str)
+      case Result.Fail(at) =>
+        another.run(str) match
+          case Result.Success(res, rem) => Result.Success(res, rem)
+          case Result.Fail(another)     => Result.Fail(at.max(another))
   )
 
 // 注释和空白
@@ -148,27 +158,27 @@ def success[A](res: A) = Parser(str => Result.Success(res, str))
 def exact(exp: Char) = Parser(str =>
   str.headOption match
     case Some(hd) if hd == exp => Result.Success(hd, str.tail)
-    case _                     => Result.Fail
+    case _                     => Result.Fail(str)
 )
 
 def exact(exp: String) = Parser(str =>
   str.stripPrefix(exp) match
     case Some(rem) => Result.Success(exp, rem)
-    case _         => Result.Fail
+    case _         => Result.Fail(str)
 )
 
 def number = Parser(str =>
   val (res, rem) = collect(isNumeric, str, "")
   if res.length() > 0
   then Result.Success(res.toInt, rem)
-  else Result.Fail
+  else Result.Fail(str)
 )
 
 def ident = Parser(str =>
   val (res, rem) = collect(isAlphabetic, str, "")
   if res.length() > 0 && !keywords.contains(res)
   then Result.Success(res, rem)
-  else Result.Fail
+  else Result.Fail(str)
 ) | exact("_")
 
 def some[A](p: Parser[A]) = for {
