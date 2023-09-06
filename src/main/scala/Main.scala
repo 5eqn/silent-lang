@@ -23,6 +23,6 @@ val M = 1000000
         val pk = pEval(Env.empty, tm)
         val tEval = System.nanoTime()
         println(s"代码生成耗时：${(tEval - tInfer) / M} ms")
-        output(s"$pk", to)
+        output(pk.compile(None), to)
         println("编译成功！")
       catch case e => println(e)
