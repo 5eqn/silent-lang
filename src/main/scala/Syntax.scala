@@ -134,6 +134,52 @@ enum Oprt:
     case All => "&&"
     case Any => "||"
 
+// 前缀操作符枚举
+enum Pref:
+  case Neg
+  case Inv
+  case Not
+
+  // 检查操作符参数类型是否合法
+  def check(tm: Raw, ty: Type): Unit =
+    val exp = this match
+      case Neg => Type.I32
+      case Inv => Type.I32
+      case Not => Type.Boo
+    try unify(exp, ty)
+    catch case UnifyError() => throw Error.TypeMismatch(tm, exp, ty)
+
+  // 获取操作符的返回值类型
+  def retTy = this match
+    case Neg => Type.I32
+    case Inv => Type.I32
+    case Not => Type.Boo
+
+  // 给定操作符右边的值，尝试化简
+  def tryEval(a: IRVal) = a match
+    case IRVal.Num(x) =>
+      this match
+        case Neg => Some(IRVal.Num(-x))
+        case Inv => Some(IRVal.Num(~x))
+        case _   => None
+    case IRVal.Boo(x) =>
+      this match
+        case Not => Some(IRVal.Boo(!x))
+        case _   => None
+    case _ => None
+
+  // 转化为 LLVM-IR 语句
+  def compile(ty: Type, x: IRVal) = this match
+    case Neg => s"sub $ty 0, $x"
+    case Inv => s"xor $ty $x, -1"
+    case Not => s"icmp eq $ty $x, 0"
+
+  // 用于调试输出，打出操作符本来的样子
+  def symbol = this match
+    case Neg => "-"
+    case Inv => "~"
+    case Not => "!"
+
 // Silent-Lang 表层语法树
 enum Raw extends Ranged:
   case Inp
@@ -145,6 +191,7 @@ enum Raw extends Ranged:
   case Lam(param: String, ty: Type, body: Raw)
   case App(func: Raw, arg: Raw)
   case Mid(oprt: Oprt, lhs: Raw, rhs: Raw)
+  case Pre(oprt: Pref, value: Raw)
   case Let(name: Names, value: Raw, rec: Option[Raw], next: Raw)
   case Alt(cond: Raw, x: Raw, y: Raw)
   case Tup(ls: List[Raw])
@@ -160,6 +207,7 @@ enum Term:
   case Lam(param: String, ty: Type, body: Term)
   case App(func: Term, arg: Term)
   case Mid(oprt: Oprt, lhs: Term, rhs: Term, ty: Type)
+  case Pre(oprt: Pref, value: Term, ty: Type)
   case Let(name: Names, value: Term, rec: Option[Term], next: Term, ty: Type)
   case Alt(cond: Term, x: Term, y: Term, ty: Type)
   case Tup(ls: List[Term])
@@ -175,6 +223,7 @@ enum Term:
     case Lam(param, ty, body)    => s"($param: $ty) => $body"
     case App(func, arg)          => s"$func($arg)"
     case Mid(oprt, lhs, rhs, ty) => s"$lhs ${oprt.symbol} $rhs"
+    case Pre(oprt, value, ty)    => s"${oprt.symbol}$value"
     case Let(name, value, rec, next, ty) =>
       val ns = name.mkString(", ")
       rec match

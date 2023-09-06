@@ -106,7 +106,7 @@ def someRest[A](lhs: List[A], p: Parser[A]): Parser[List[A]] = (for {
   res <- someRest(lhs :+ rhs, p)
 } yield res) | success(lhs)
 
-// 操作符列表
+// 中缀操作符列表
 def oprts = List(
   kwd('&').map(_ => Oprt.And)
     | kwd('|').map(_ => Oprt.Or)
@@ -128,19 +128,19 @@ def oprts = List(
     | kwd("||").map(_ => Oprt.Any)
 )
 
+// 前缀操作符列表
+def prefOp = kwd('-').map(_ => Pref.Neg)
+  | kwd('~').map(_ => Pref.Inv)
+  | kwd('!').map(_ => Pref.Not)
+
 // 原子操作符
-def atm = ranged(inp | brk | pos | neg | boo | vrb | par | prt)
+def atm = ranged(inp | brk | num | boo | vrb | par | prt)
 
 def inp = kwd("input").map(_ => Raw.Inp)
 
 def brk = kwd("nope").map(_ => Raw.Brk)
 
-def pos = number.map(Raw.Num(_))
-
-def neg = for {
-  _ <- kwd('-')
-  value <- number
-} yield Raw.Num(-value)
+def num = number.map(Raw.Num(_))
 
 def boo = kwd("true").map(_ => Raw.Boo(true)) |
   kwd("false").map(_ => Raw.Boo(false))
@@ -175,10 +175,16 @@ def appRest(lhs: Raw): Parser[Raw] = (for {
   res <- appRest(Raw.App(lhs, rhs))
 } yield res) | success(lhs)
 
+// 前缀运算符
+def pre = for {
+  oprt <- prefOp
+  value <- app
+} yield Raw.Pre(oprt, value)
+
 // 中缀运算符
 def mid(level: Int): Parser[Raw] = ranged(
   level match
-    case 0 => app
+    case 0 => pre | app
     case _ =>
       for {
         lhs <- mid(level - 1)

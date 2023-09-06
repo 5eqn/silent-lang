@@ -21,6 +21,7 @@ enum IROp:
   case Inp(res: String)
   case Prt(arg: IRVal, ty: Type)
   case Mid(oprt: Oprt, res: String, ty: Type, lhs: IRVal, rhs: IRVal)
+  case Pre(oprt: Pref, res: String, ty: Type, value: IRVal)
   case Alt(res: Names, ty: Types, cond: IRVal, x: IRPack, y: IRPack)
   case Rec(res: Names, ty: Types, init: IRVal, rec: IRPack)
 
@@ -38,6 +39,8 @@ enum IROp:
     case Prt(arg, ty) => s"  call void @print($ty noundef $arg)"
     case Mid(oprt, res, ty, lhs, rhs) =>
       s"  %$res = ${oprt.compile(ty, lhs, rhs)}"
+    case Pre(oprt, res, ty, value) =>
+      s"  %$res = ${oprt.compile(ty, value)}"
 
     // 遇到选择块，先搞出两个分支的值列表
     case Alt(res, ty, cond, x, y) =>
@@ -142,4 +145,5 @@ object IROps:
 // LLVM-IR 值，是 Partial Eval 的结果
 case class IRPack(value: IRVal, ops: IROps):
   def prepend(oldOps: IROps) = IRPack(value, oldOps.add(ops))
-  def compile(exit: Option[String]) = ops.compile(exit)
+  def compile(exit: Option[String]) =
+    s"${ops.compile(exit)}\n  ret i32 $value"

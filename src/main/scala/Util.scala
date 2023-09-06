@@ -1,5 +1,5 @@
 // 不能作为变量名的特殊字符列表
-def specialChar = "&|^><*/%+-=!,: \t\n()[]"
+def specialChar = "&|^><*/%+-=!,:~()[] \t\n"
 
 // 不能作为变量名的关键字列表
 def keywords = List(
