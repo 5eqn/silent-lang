@@ -510,3 +510,64 @@ let b[i of n + 1] =
 
 let c[i of n + 1] = print(b[i])
 ```
+
+#### 类型
+
+避免构造器里出现未定义的东西：
+
+```
+fz : Fib 0
+fs (p : Fib n) (p.y) (p.x + p.y) : Fib (S n)
+
+x fz = 1
+y fz = 0
+
+x fs _ r _ = r
+y fs _ _ r = r
+
+res : n -> Fib n -> Unit
+res n p = print p.y
+
+@autogen
+pf : n -> Fib n
+pf 0 = fz
+pf (S n) =
+  let p = pf n
+  fs p p.y (p.x + p.y)
+
+main : Int
+main = 
+  let n = input
+  let _ = res n (pf n)
+  0
+```
+
+指数复杂度的计算（树状递推）：
+
+```
+fz : Fib 0
+f1 : Fib 1
+fs (p : Fib n) (q : Fib (S n)) (p.v + q.v) : Fib (S (S n))
+
+v fz = 0
+v f1 = 1
+v fs _ _ r = r
+
+res : n -> Fib n -> Unit
+res n p = print p.v
+
+@autogen
+pf : n -> Fib n
+pf 0 = fz
+pf 1 = f1
+pf (S (S n)) =
+  let p = pf n
+  let q = pf (S n)
+  fs p q (p.v + q.v)
+
+main : Int
+main = 
+  let n = input
+  let _ = res n (pf n)
+  0
+```

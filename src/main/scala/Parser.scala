@@ -86,7 +86,7 @@ def number = Parser(str =>
   else Result.Fail(str)
 )
 
-//读入一个变量名
+// 读入一个变量名
 def ident = Parser(str =>
   val (res, rem) = collect(isNotSpecial, str, "")
   if res.length() > 0 && !keywords.contains(res)
