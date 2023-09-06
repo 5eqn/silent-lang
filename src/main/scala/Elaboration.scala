@@ -2,12 +2,10 @@
 def infer(ctx: Ctx, term: Raw): TmPack = term match
 
   // Nope 的类型是任意的
-  case Raw.Brk =>
-    TmPack(Term.Brk, Type.Any)
+  case Raw.Brk => TmPack(Term.Brk, Type.Any)
 
   // 输入的类型暂时只能是 i32
-  case Raw.Inp =>
-    TmPack(Term.Inp, Type.I32)
+  case Raw.Inp => TmPack(Term.Inp, Type.I32)
 
   // 输出的参数类型暂时只能是 i32
   case Raw.Prt(arg) =>
@@ -16,12 +14,10 @@ def infer(ctx: Ctx, term: Raw): TmPack = term match
     TmPack(Term.Prt(tm, ty), ty)
 
   // 数字的类型一定是 i32
-  case Raw.Num(value) =>
-    TmPack(Term.Num(value), Type.I32)
+  case Raw.Num(value) => TmPack(Term.Num(value), Type.I32)
 
   // 布尔值的类型一定是 i1
-  case Raw.Boo(value) =>
-    TmPack(Term.Boo(value), Type.Boo)
+  case Raw.Boo(value) => TmPack(Term.Boo(value), Type.Boo)
 
   // 变量的类型要查表
   case Raw.Var(name) =>
@@ -84,7 +80,8 @@ def infer(ctx: Ctx, term: Raw): TmPack = term match
         ctx.bind(name(0), ty)
 
       // 其他情况全部寄掉
-      case (len, _) => throw Error.CountMismatch(value)
+      case (len, _) =>
+        throw Error.CountMismatch(value)
 
     // 检查递归体内语句是否正确
     val rtm = recVal match
