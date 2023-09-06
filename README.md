@@ -229,7 +229,8 @@ print(z)
 - [x] tuple
 - [x] track grammar mistake
 - [x] allow utf-8 variable names
-- [ ] benchmark
+- [x] benchmark (gave up)
+- [ ] return value
 - [ ] use llvm binding
 - [ ] vector
 - [ ] string
@@ -461,7 +462,7 @@ let i = 0 rec
   let _ = print(a[i]) in
   i + 1 in
 
-i
+0
 ```
 
 等效于：
@@ -560,4 +561,29 @@ main =
   let n = input
   let _ = res n (pf n)
   0
+```
+
+基于类型的数组：
+
+```
+sz (v = input 0) : Sum 0
+ss (p : Sum i) (v = p.v + input (S i)) : Sum (S i)
+```
+
+树状数组重写：
+
+```
+😅 original
+let b[i of n + 1] = 
+  if i == 0 then 0 else
+  let t, m = input[i], i - 1 rec
+    if m & 1 
+    then t + b[m], m - m & -m
+    else nope
+  t
+
+😅 rewritten
+zero (v = 0) : Arr 0
+succ (ls : Dom i) (v = ls.v + input i) : Arr (S i)
+Dom i = if i & 1 then Arr i :: Dom (i - i & -i) else Nil
 ```
