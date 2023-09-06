@@ -516,14 +516,8 @@ let c[i of n + 1] = print(b[i])
 避免构造器里出现未定义的东西：
 
 ```
-fz : Fib 0
-fs (p : Fib n) (p.y) (p.x + p.y) : Fib (S n)
-
-x fz = 1
-y fz = 0
-
-x fs _ r _ = r
-y fs _ _ r = r
+fz (x = 1) (y = 0) : Fib 0
+fs (p : Fib n) (x = p.y) (y = p.x + p.y) : Fib (S n)
 
 res : n -> Fib n -> Unit
 res n p = print p.y
@@ -545,13 +539,9 @@ main =
 指数复杂度的计算（树状递推）：
 
 ```
-fz : Fib 0
-f1 : Fib 1
-fs (p : Fib n) (q : Fib (S n)) (p.v + q.v) : Fib (S (S n))
-
-v fz = 0
-v f1 = 1
-v fs _ _ r = r
+fz (v = 0) : Fib 0
+f1 (v = 1) : Fib 1
+fs (p : Fib n) (q : Fib (S n)) (v = p.v + q.v) : Fib (S (S n))
 
 res : n -> Fib n -> Unit
 res n p = print p.v
