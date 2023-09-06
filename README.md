@@ -229,13 +229,15 @@ print(z)
 - [x] tuple
 - [x] track grammar mistake
 - [x] allow utf-8 variable names
-- [x] benchmark (gave up)
+- [x] performance improve
 - [ ] return value
-- [ ] use llvm binding
+- [ ] prefix operators
 - [ ] vector
 - [ ] string
+- [ ] debugging
 - [ ] mutual-rec
 - [ ] closure
+- [ ] use llvm binding
 
 ### 技术细节
 
@@ -510,80 +512,4 @@ let b[i of n + 1] =
   t
 
 let c[i of n + 1] = print(b[i])
-```
-
-#### 类型
-
-避免构造器里出现未定义的东西：
-
-```
-fz (x = 1) (y = 0) : Fib 0
-fs (p : Fib n) (x = p.y) (y = p.x + p.y) : Fib (S n)
-
-res : n -> Fib n -> Unit
-res n p = print p.y
-
-@autogen
-pf : n -> Fib n
-pf 0 = fz
-pf (S n) =
-  let p = pf n
-  fs p p.y (p.x + p.y)
-
-main : Int
-main = 
-  let n = input
-  let _ = res n (pf n)
-  0
-```
-
-指数复杂度的计算（树状递推）：
-
-```
-fz (v = 0) : Fib 0
-f1 (v = 1) : Fib 1
-fs (p : Fib n) (q : Fib (S n)) (v = p.v + q.v) : Fib (S (S n))
-
-res : n -> Fib n -> Unit
-res n p = print p.v
-
-@autogen
-pf : n -> Fib n
-pf 0 = fz
-pf 1 = f1
-pf (S (S n)) =
-  let p = pf n
-  let q = pf (S n)
-  fs p q (p.v + q.v)
-
-main : Int
-main = 
-  let n = input
-  let _ = res n (pf n)
-  0
-```
-
-基于类型的数组：
-
-```
-sz (v = input 0) : Sum 0
-ss (p : Sum i) (v = p.v + input (S i)) : Sum (S i)
-```
-
-树状数组重写：
-
-```
-😅 original
-let b[i of n + 1] = 
-  if i == 0 then 0 else
-  let t, m = input[i], i - 1 rec
-    if m & 1 
-    then t + b[m], m - m & -m
-    else nope
-  t
-
-😅 rewritten
-zero (v = 0) : Arr 0
-succ (ls : Dom i) (v = ls.v + input i) : Arr (S i)
-Dom i = if i & 1 then Arr i :: Dom (i - i & -i) else Nil
 ```

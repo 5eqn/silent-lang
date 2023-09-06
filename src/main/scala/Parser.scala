@@ -33,38 +33,15 @@ def ranged[A <: Ranged](p: Parser[A]) = Parser(str =>
     case Result.Fail(at) => Result.Fail(at)
 )
 
-// 注释和空白
-def lineComment: Parser[Unit] = for {
-  _ <- exact("😅") | exact("//")
-  _ <- line
-} yield ()
-
-def blockCommentEmoji: Parser[Unit] = for {
-  _ <- exact("👉")
-  _ <- until("👈")
-  _ <- exact("👈")
-} yield ()
-
-def blockCommentNormal: Parser[Unit] = for {
-  _ <- exact("/*")
-  _ <- until("*/")
-  _ <- exact("*/")
-} yield ()
-
-def comment: Parser[Unit] = for {
-  _ <- lineComment | blockCommentNormal | blockCommentEmoji
-  _ <- ws
-} yield ()
-
+// 杂项 Parser
 def until(p: String) = Parser(str => Result.Success((), str.until(p)))
 def line = Parser(str => Result.Success((), str.trim(_ != '\n')))
 def space = Parser(str => Result.Success((), str.trim(_.isWhitespace)))
-def ws = space.flatMap(_ => optional(comment))
-
-// 直接成功的 Parser
 def success[A](res: A) = Parser(str => Result.Success(res, str))
+def optional[A](p: Parser[A]) = p.map(Some(_)) | success(None)
 
 // 直接读入给定字符
+def kwd(exp: Char) = lexeme(exact(exp))
 def exact(exp: Char) = Parser(str =>
   str.headOption match
     case Some(hd) if hd == exp => Result.Success(hd, str.tail)
@@ -72,6 +49,7 @@ def exact(exp: Char) = Parser(str =>
 )
 
 // 直接读入给定字符串
+def kwd(exp: String) = lexeme(exact(exp))
 def exact(exp: String) = Parser(str =>
   str.stripPrefix(exp) match
     case Some(rem) => Result.Success(exp, rem)
@@ -94,76 +72,93 @@ def ident = Parser(str =>
   else Result.Fail(str)
 )
 
+// 注释和空格
+def lexeme[A](p: Parser[A]) = ws.flatMap(_ => p.flatMap(_ => ws))
+def comment = (lineComment | blockComment | blockEmoji).flatMap(_ => ws)
+def ws: Parser[Unit] = space.flatMap(_ => optional(comment).map(_ => ()))
+
+def lineComment: Parser[Unit] = for {
+  _ <- exact("😅") | exact("//")
+  _ <- line
+} yield ()
+
+def blockEmoji: Parser[Unit] = for {
+  _ <- exact("👉")
+  _ <- until("👈")
+  _ <- exact("👈")
+} yield ()
+
+def blockComment: Parser[Unit] = for {
+  _ <- exact("/*")
+  _ <- until("*/")
+  _ <- exact("*/")
+} yield ()
+
 // 读入以逗号分隔的一系列东西
 def some[A](p: Parser[A]) = for {
   lhs <- p
   res <- someRest(List(lhs), p)
 } yield res
 
-// 读入以逗号分隔的一系列东西，但是开头是逗号
 def someRest[A](lhs: List[A], p: Parser[A]): Parser[List[A]] = (for {
-  _ <- exact(',')
-  _ <- ws
+  _ <- kwd(',')
   rhs <- p
   res <- someRest(lhs :+ rhs, p)
 } yield res) | success(lhs)
 
-// 选择性地读入一个东西
-def optional[A](p: Parser[A]) = p.map(Some(_)) | success(None)
-
 // 操作符列表
 def oprts = List(
-  exact('&').map(_ => Oprt.And)
-    | exact('|').map(_ => Oprt.Or)
-    | exact('^').map(_ => Oprt.Xor),
-  exact(">>").map(_ => Oprt.Shr)
-    | exact("<<").map(_ => Oprt.Shl),
-  exact('*').map(_ => Oprt.Mul)
-    | exact('/').map(_ => Oprt.Div)
-    | exact('%').map(_ => Oprt.Mod),
-  exact('+').map(_ => Oprt.Add)
-    | exact('-').map(_ => Oprt.Sub),
-  exact(">=").map(_ => Oprt.Ge)
-    | exact("<=").map(_ => Oprt.Le)
-    | exact('>').map(_ => Oprt.Gt)
-    | exact('<').map(_ => Oprt.Lt)
-    | exact("==").map(_ => Oprt.Eq)
-    | exact("!=").map(_ => Oprt.Ne),
-  exact("&&").map(_ => Oprt.All)
-    | exact("||").map(_ => Oprt.Any)
+  kwd('&').map(_ => Oprt.And)
+    | kwd('|').map(_ => Oprt.Or)
+    | kwd('^').map(_ => Oprt.Xor),
+  kwd(">>").map(_ => Oprt.Shr)
+    | kwd("<<").map(_ => Oprt.Shl),
+  kwd('*').map(_ => Oprt.Mul)
+    | kwd('/').map(_ => Oprt.Div)
+    | kwd('%').map(_ => Oprt.Mod),
+  kwd('+').map(_ => Oprt.Add)
+    | kwd('-').map(_ => Oprt.Sub),
+  kwd(">=").map(_ => Oprt.Ge)
+    | kwd("<=").map(_ => Oprt.Le)
+    | kwd('>').map(_ => Oprt.Gt)
+    | kwd('<').map(_ => Oprt.Lt)
+    | kwd("==").map(_ => Oprt.Eq)
+    | kwd("!=").map(_ => Oprt.Ne),
+  kwd("&&").map(_ => Oprt.All)
+    | kwd("||").map(_ => Oprt.Any)
 )
 
 // 原子操作符
-def inp = exact("input").map(_ => Raw.Inp)
+def atm = ranged(inp | brk | pos | neg | boo | vrb | par | prt)
 
-def brk = exact("nope").map(_ => Raw.Brk)
+def inp = kwd("input").map(_ => Raw.Inp)
+
+def brk = kwd("nope").map(_ => Raw.Brk)
 
 def pos = number.map(Raw.Num(_))
 
 def neg = for {
-  _ <- exact('-')
+  _ <- kwd('-')
   value <- number
 } yield Raw.Num(-value)
 
-def boo = exact("true").map(_ => Raw.Boo(true)) |
-  exact("false").map(_ => Raw.Boo(false))
+def boo = kwd("true").map(_ => Raw.Boo(true)) |
+  kwd("false").map(_ => Raw.Boo(false))
 
 def vrb = ident.map(Raw.Var(_))
 
 def par = for {
-  _ <- exact('(')
+  _ <- kwd('(')
   tm <- term
-  _ <- exact(')')
+  _ <- kwd(')')
 } yield tm
 
 def prt = for {
-  _ <- exact("print")
-  _ <- exact('(')
+  _ <- kwd("print")
+  _ <- kwd('(')
   arg <- term
-  _ <- exact(')')
+  _ <- kwd(')')
 } yield Raw.Prt(arg)
-
-def atm = ranged(inp | brk | pos | neg | boo | vrb | par | prt)
 
 // 函数应用
 def app = ranged(
@@ -174,9 +169,9 @@ def app = ranged(
 )
 
 def appRest(lhs: Raw): Parser[Raw] = (for {
-  _ <- exact('(')
+  _ <- kwd('(')
   rhs <- term
-  _ <- exact(')')
+  _ <- kwd(')')
   res <- appRest(Raw.App(lhs, rhs))
 } yield res) | success(lhs)
 
@@ -192,9 +187,7 @@ def mid(level: Int): Parser[Raw] = ranged(
 )
 
 def midRest(level: Int, lhs: Raw): Parser[Raw] = (for {
-  _ <- ws
   op <- oprts(level - 1)
-  _ <- ws
   rhs <- mid(level - 1)
   res <- midRest(level, Raw.Mid(op, lhs, rhs))
 } yield res) | success(lhs)
@@ -205,12 +198,12 @@ def tup = some(mid(oprts.length)).map(ls =>
 )
 
 // 类型
-def tyInt = exact("int").map(_ => Type.I32)
+def tyInt = kwd("int").map(_ => Type.I32)
 
 def tyPar = for {
-  _ <- exact('(')
+  _ <- kwd('(')
   res <- tyAny
-  _ <- exact(')')
+  _ <- kwd(')')
 } yield res
 
 def tyAtom: Parser[Type] = tyInt | tyPar
@@ -221,70 +214,49 @@ def tyFun = for {
 } yield res
 
 def tyFunRest(lhs: Type): Parser[Type] = (for {
-  _ <- ws
-  _ <- exact("->")
-  _ <- ws
+  _ <- kwd("->")
   rhs <- tyFun
 } yield Type.Fun(lhs, rhs)) | success(lhs)
 
 def tyAny =
   some(tyFun).map(ls => if ls.length == 1 then ls(0) else Type.Tup(ls))
 
-// 匿名函数
-def lam = for {
-  _ <- exact('(')
-  param <- ident
-  _ <- ws
-  _ <- exact(':')
-  _ <- ws
-  ty <- tyAny
-  _ <- exact(')')
-  _ <- ws
-  _ <- exact("=>")
-  _ <- ws
-  body <- term
-} yield Raw.Lam(param, ty, body)
-
 // 赋值
 def rec = for {
-  _ <- exact("rec")
-  _ <- ws
+  _ <- kwd("rec")
   value <- term
 } yield value
 
 def let = for {
-  _ <- exact("let")
-  _ <- ws
+  _ <- kwd("let")
   name <- some(ident)
-  _ <- ws
-  _ <- exact('=')
-  _ <- ws
+  _ <- kwd('=')
   value <- term
-  _ <- ws
   recVal <- optional(rec)
   _ <- ws
   next <- term
 } yield Raw.Let(name, value, recVal, next)
 
+// 匿名函数
+def lam = for {
+  _ <- kwd('(')
+  param <- ident
+  _ <- kwd(':')
+  ty <- tyAny
+  _ <- kwd(')')
+  _ <- kwd("=>")
+  body <- term
+} yield Raw.Lam(param, ty, body)
+
 // 选择
 def alt = for {
-  _ <- exact("if")
-  _ <- ws
+  _ <- kwd("if")
   cond <- term
-  _ <- ws
-  _ <- exact("then")
-  _ <- ws
+  _ <- kwd("then")
   x <- term
-  _ <- ws
-  _ <- exact("else")
-  _ <- ws
+  _ <- kwd("else")
   y <- term
 } yield Raw.Alt(cond, x, y)
 
 // 整个表达式
-def term: Parser[Raw] = ranged(tup | lam | let | rec | alt)
-def source = for {
-  _ <- ws
-  res <- term
-  _ <- ws
-} yield res
+def term: Parser[Raw] = ranged(let | lam | alt | tup)
