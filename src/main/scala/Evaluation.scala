@@ -1,8 +1,7 @@
 def pEval(env: Env, term: Term): IRPack = term match
 
   // Nope 操作会变成一条跳转指令，值是 Brk，这会阻止 store 操作
-  case Term.Brk =>
-    IRPack(IRVal.Brk, IROps.from(IROp.Brk))
+  case Term.Brk => IRPack(IRVal.Brk, IROps.from(IROp.Brk))
 
   // 对输入操作单独使用一条指令
   case Term.Inp =>
@@ -15,16 +14,13 @@ def pEval(env: Env, term: Term): IRPack = term match
     IRPack(av, aop.add(IROp.Prt(av, ty)))
 
   // 数字直接返回
-  case Term.Num(value) =>
-    IRPack(IRVal.Num(value), IROps.empty)
+  case Term.Num(value) => IRPack(IRVal.Num(value), IROps.empty)
 
   // 布尔值直接返回
-  case Term.Boo(value) =>
-    IRPack(IRVal.Boo(value), IROps.empty)
+  case Term.Boo(value) => IRPack(IRVal.Boo(value), IROps.empty)
 
   // 变量要查表得到值
-  case Term.Var(name) =>
-    IRPack(env(name), IROps.empty)
+  case Term.Var(name) => IRPack(env(name), IROps.empty)
 
   // 函数收到值之后再 pEval
   case Term.Lam(param, ty, body) =>
@@ -85,15 +81,13 @@ def pEval(env: Env, term: Term): IRPack = term match
 
           // 在 let a, b = c, d 中，希望左右一样多
           case (len, IRVal.Tup(ls)) if len == ls.length =>
-            (
-              name
-                .zip(ls)
-                .foldLeft(env)((e, pair) =>
-                  val (n, v) = pair
-                  e.bind(n, v)
-                ),
-              IROps.empty
-            )
+            val e = name
+              .zip(ls)
+              .foldLeft(env)((e, pair) =>
+                val (n, v) = pair
+                e.bind(n, v)
+              )
+            (e, IROps.empty)
 
           // 在 let pair = 1, 2 中，直接把 (1, 2) 绑定到 pair 上
           case (1, _) =>

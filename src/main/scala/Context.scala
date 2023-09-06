@@ -10,20 +10,16 @@ def fresh =
 
 // 语境，存储变量名到类型的对应
 case class Ctx(types: Map[String, Type]):
-  def bind(name: String, ty: Type) =
-    Ctx(types + (name -> ty))
+  def bind(name: String, ty: Type) = Ctx(types + (name -> ty))
   def apply(name: String) = types(name)
 
 object Ctx:
-  def empty =
-    Ctx(Map("input" -> Type.I32))
+  def empty = Ctx(Map("input" -> Type.I32))
 
 // 环境，存储变量名到值的对应
 case class Env(values: Map[String, IRVal]):
-  def bind(name: String, value: IRVal) =
-    Env(values + (name -> value))
+  def bind(name: String, value: IRVal) = Env(values + (name -> value))
   def apply(name: String) = values(name)
 
 object Env:
-  def empty =
-    Env(Map("input" -> IRVal.Var("input")))
+  def empty = Env(Map("input" -> IRVal.Var("input")))
