@@ -45,16 +45,25 @@ def infer(ctx: Ctx, term: Raw): TmPack = term match
       case _ =>
         throw Error.TypeMismatch(func, Type.Fun(Type.Any, Type.Any), fty)
 
-  // 加法类型容易通过参数求出
+  // 中缀运算类型容易通过参数求出
   case Raw.Mid(oprt, lhs, rhs) =>
     val TmPack(ltm, lty) = infer(ctx, lhs)
     val TmPack(rtm, rty) = infer(ctx, rhs)
 
-    // 加号两边都得是 i32 才能相加
+    // 检查中缀运算参数类型
     oprt.check(lhs, lty)
     oprt.check(rhs, rty)
     val resTy = oprt.retTy
     TmPack(Term.Mid(oprt, ltm, rtm, lty), resTy)
+
+  // 前缀运算类型容易通过参数求出
+  case Raw.Pre(oprt, value) =>
+    val TmPack(vtm, vty) = infer(ctx, value)
+
+    // 检查前缀运算参数类型
+    oprt.check(value, vty)
+    val resTy = oprt.retTy
+    TmPack(Term.Pre(oprt, vtm, vty), resTy)
 
   // 赋值语句直接转换成语境
   case Raw.Let(name, value, recVal, next) =>

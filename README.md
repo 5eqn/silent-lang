@@ -230,8 +230,8 @@ print(z)
 - [x] track grammar mistake
 - [x] allow utf-8 variable names
 - [x] performance improve
-- [ ] return value
-- [ ] prefix operators
+- [x] return value
+- [x] prefix operators
 - [ ] vector
 - [ ] string
 - [ ] debugging

@@ -44,7 +44,7 @@ def pEval(env: Env, term: Term): IRPack = term match
       // 函数没有实现（可能是外部函数），暂时处理不了
       case _ => throw new Exception("app lhs is not a function")
 
-  // 加法，先求加法两边的值
+  // 中缀运算，先求两边的值
   case Term.Mid(oprt, lhs, rhs, ty) =>
     val IRPack(lv, lop) = pEval(env, lhs)
     val IRPack(rv, rop) = pEval(env, rhs)
@@ -54,11 +54,25 @@ def pEval(env: Env, term: Term): IRPack = term match
     oprt.tryEval(lv, rv) match
       case Some(value) => IRPack(value, ops)
 
-      // 否则新建一个变量存储这个加法成果
+      // 否则新建一个变量存储这个运算成果
       case None =>
         val name = fresh
         val newOp = IROp.Mid(oprt, name, ty, lv, rv)
         IRPack(IRVal.Var(name), ops.add(newOp))
+
+  // 前缀运算，先求值
+  case Term.Pre(oprt, value, ty) =>
+    val IRPack(vv, vop) = pEval(env, value)
+
+    // 尝试直接化简
+    oprt.tryEval(vv) match
+      case Some(res) => IRPack(res, vop)
+
+      // 否则新建一个变量存储这个运算成果
+      case None =>
+        val name = fresh
+        val newOp = IROp.Pre(oprt, name, ty, vv)
+        IRPack(IRVal.Var(name), vop.add(newOp))
 
   // 定义或递归
   case Term.Let(name, value, recVal, next, ty) =>
