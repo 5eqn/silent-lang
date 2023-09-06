@@ -15,9 +15,6 @@ enum IRVal:
     case Tup(ls)    => s"$ls"
     case Lam(fn)    => "lam"
 
-// 存储当前如果 Nope 了要跳到哪里
-var exit = ""
-
 // LLVM-IR 操作
 enum IROp:
   case Brk
@@ -28,12 +25,13 @@ enum IROp:
   case Rec(res: Names, ty: Types, init: IRVal, rec: IRPack)
 
   // 把操作转化成 LLVM-IR 代码字符串
-  override def toString() = this match
+  def compile(exit: Option[String]): String = this match
 
     // 遇到 Nope，检查 exit 变量，如果不为空就跳转
     case Brk =>
-      if exit == "" then throw new Exception("no loop to nope")
-      else s"  br label %$exit"
+      exit match
+        case None        => throw new Exception("no loop to nope")
+        case Some(label) => s"  br label %$label"
 
     // 输入、打印、相加指令都能直接翻译
     case Inp(res)     => s"  %$res = call i32 @input()"
@@ -69,12 +67,12 @@ enum IROp:
   br i1 $cond, label %$l1, label %$l2
 
 $l1:
-$xop
+${xop.compile(exit)}
 $storeX
   br label %$l3
 
 $l2:
-$yop
+${yop.compile(exit)}
 $storeY
   br label %$l3
 
@@ -103,19 +101,18 @@ $load"""
 
       // 构建循环字符串
       val (l1, l2) = (fresh, fresh)
-      exit = l2
+      val newExit = Some(l2)
       val ret = s"""$alloc
 $init
   br label %$l1
 
 $l1:
 $load
-$rop
+${rop.compile(newExit)}
 $store
   br label %$l1
 
 $l2:"""
-      exit = ""
       ret
 
 // LLVM-IR 指针
@@ -135,8 +132,8 @@ case class IROps(ops: List[IROp]):
   def add(irops: IROps) =
     val IROps(newOps) = irops
     IROps(ops ++ newOps)
-  override def toString() =
-    ops.map(op => s"$op").mkString("\n")
+  def compile(exit: Option[String]) =
+    ops.map(op => op.compile(exit)).mkString("\n")
 
 object IROps:
   def empty = IROps(List())
@@ -145,4 +142,4 @@ object IROps:
 // LLVM-IR 值，是 Partial Eval 的结果
 case class IRPack(value: IRVal, ops: IROps):
   def prepend(oldOps: IROps) = IRPack(value, oldOps.add(ops))
-  override def toString() = s"$ops"
+  def compile(exit: Option[String]) = ops.compile(exit)
