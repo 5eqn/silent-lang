@@ -10,7 +10,7 @@ val M = 1000000
   src.close()
   val tRead = System.nanoTime()
   println(s"读入文件耗时：${(tRead - tStart) / M} ms")
-  source.run(Input(str, 0)) match
+  term.run(Input(str, 0)) match
     case Result.Fail(at) =>
       println(s"${Range(at, at.next)}\n文件的语法有问题！")
     case Result.Success(res, rem) =>
