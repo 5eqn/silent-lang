@@ -5,8 +5,8 @@ def pEval(env: Env, term: Term): IRPack = term match
 
   // 对输入操作单独使用一条指令
   case Term.Inp =>
-    val name = fresh
-    IRPack(IRVal.Var(name), IROps.from(IROp.Inp(name)))
+    val v = newVar
+    IRPack(v, IROps.from(IROp.Inp(v)))
 
   // 对输出操作单独使用一条指令
   case Term.Prt(arg, ty) =>
@@ -52,9 +52,9 @@ def pEval(env: Env, term: Term): IRPack = term match
 
       // 否则新建一个变量存储这个运算成果
       case None =>
-        val name = fresh
-        val newOp = IROp.Mid(oprt, name, ty, lv, rv)
-        IRPack(IRVal.Var(name), ops.add(newOp))
+        val v = newVar
+        val newOp = IROp.Mid(oprt, v, ty, lv, rv)
+        IRPack(v, ops.add(newOp))
 
   // 前缀运算，先求值
   case Term.Pre(oprt, value, ty) =>
@@ -66,9 +66,9 @@ def pEval(env: Env, term: Term): IRPack = term match
 
       // 否则新建一个变量存储这个运算成果
       case None =>
-        val name = fresh
-        val newOp = IROp.Pre(oprt, name, ty, vv)
-        IRPack(IRVal.Var(name), vop.add(newOp))
+        val v = newVar
+        val newOp = IROp.Pre(oprt, v, ty, vv)
+        IRPack(v, vop.add(newOp))
 
   // 定义或递归
   case Term.Let(name, value, recVal, next, ty) =>
@@ -98,13 +98,10 @@ def pEval(env: Env, term: Term): IRPack = term match
 
       // 若是递归块，先计算递归操作
       case Some(rec) =>
-        val ns = name.map(_ => fresh)
+        val vs = name.map(_ => newVar)
         val e = name
-          .zip(ns)
-          .foldLeft(env)((e, pair) =>
-            val (from, to) = pair
-            e.bind(from, IRVal.Var(to))
-          )
+          .zip(vs)
+          .foldLeft(env)((e, pair) => e.bind(pair._1, pair._2))
         val rpk = pEval(e, rec)
 
         // 构建类型列表
@@ -113,7 +110,7 @@ def pEval(env: Env, term: Term): IRPack = term match
           case _            => List(ty)
 
         // 构造出递归操作
-        val newOp = IROp.Rec(ns, tys, vv, rpk)
+        val newOp = IROp.Rec(vs, tys, vv, rpk)
 
         // 构造出结果
         (e, IROps.from(newOp))
@@ -145,13 +142,11 @@ def pEval(env: Env, term: Term): IRPack = term match
           case _            => List(ty)
 
         // 构造出 Alt 操作
-        val name = tys.map(_ => fresh)
-        val newOp = IROp.Alt(name, tys, cv, xpk, ypk)
+        val vs = tys.map(_ => newVar)
+        val newOp = IROp.Alt(vs, tys, cv, xpk, ypk)
 
         // 构造出结果
-        val res =
-          if name.length == 1 then IRVal.Var(name(0))
-          else IRVal.Tup(name.map(n => IRVal.Var(n)))
+        val res = if vs.length == 1 then vs(0) else IRVal.Tup(vs)
         IRPack(res, cop.add(newOp))
 
   // 元组直接暴力求
