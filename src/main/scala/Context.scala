@@ -8,6 +8,8 @@ def fresh =
   counter += 1
   s"x$counter"
 
+def newVar = IRVal.Var(fresh)
+
 // 语境，存储变量名到类型的对应
 case class Ctx(types: Map[String, Type]):
   def bind(name: String, ty: Type) = Ctx(types + (name -> ty))

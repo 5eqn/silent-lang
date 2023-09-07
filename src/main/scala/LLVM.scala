@@ -18,12 +18,14 @@ enum IRVal:
 // LLVM-IR 操作
 enum IROp:
   case Brk
-  case Inp(res: String)
+  case Inp(res: IRVal)
   case Prt(arg: IRVal, ty: Type)
-  case Mid(oprt: Oprt, res: String, ty: Type, lhs: IRVal, rhs: IRVal)
-  case Pre(oprt: Pref, res: String, ty: Type, value: IRVal)
-  case Alt(res: Names, ty: Types, cond: IRVal, x: IRPack, y: IRPack)
-  case Rec(res: Names, ty: Types, init: IRVal, rec: IRPack)
+  case Mid(oprt: Oprt, res: IRVal, ty: Type, lhs: IRVal, rhs: IRVal)
+  case Pre(oprt: Pref, res: IRVal, ty: Type, value: IRVal)
+  case Alt(res: List[IRVal], ty: Types, cond: IRVal, x: IRPack, y: IRPack)
+  case Rec(res: List[IRVal], ty: Types, init: IRVal, rec: IRPack)
+  case Idx(res: IRVal, arrTy: Type, eleTy: Type, value: IRVal, idx: IRVal)
+  case Arr(res: IRVal, arrTy: Type, eleTy: Type, rec: IRPack)
 
   // 把操作转化成 LLVM-IR 代码字符串
   def compile(exit: Option[String]): String = this match
@@ -35,12 +37,12 @@ enum IROp:
         case Some(label) => s"  br label %$label"
 
     // 输入、打印、相加指令都能直接翻译
-    case Inp(res)     => s"  %$res = call i32 @input()"
+    case Inp(res)     => s"  $res = call i32 @input()"
     case Prt(arg, ty) => s"  call void @print($ty noundef $arg)"
     case Mid(oprt, res, ty, lhs, rhs) =>
-      s"  %$res = ${oprt.compile(ty, lhs, rhs)}"
+      s"  $res = ${oprt.compile(ty, lhs, rhs)}"
     case Pre(oprt, res, ty, value) =>
-      s"  %$res = ${oprt.compile(ty, value)}"
+      s"  $res = ${oprt.compile(ty, value)}"
 
     // 遇到选择块，先搞出两个分支的值列表
     case Alt(res, ty, cond, x, y) =>
@@ -117,6 +119,10 @@ $store
 
 $l2:"""
       ret
+    case Idx(res, arrTy, eleTy, value, idx) =>
+      val ptr = fresh
+      s"  $ptr = getelementptr inbounds $arrTy, ptr $value, i64 0, i64 $idx\n  $res = load $eleTy, ptr $ptr, align 4"
+    case Arr(res, arrTy, eleTy, rec) => ""
 
 // LLVM-IR 指针
 case class IRPtr(name: String, ty: Type):
@@ -124,7 +130,7 @@ case class IRPtr(name: String, ty: Type):
     case IRVal.Brk => ""
     case _         => s"""  store $ty $v, ptr %$name, align 4"""
   def alloca = s"  %$name = alloca $ty, align 4"
-  def load(to: String) = s"  %$to = load $ty, ptr %$name, align 4"
+  def load(to: IRVal) = s"  $to = load $ty, ptr %$name, align 4"
 
 object IRPtr:
   def next(ty: Type) = IRPtr(fresh, ty)

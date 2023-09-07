@@ -238,6 +238,7 @@ print(z)
 - [ ] mutual-rec
 - [ ] closure
 - [ ] use llvm binding
+- [ ] c backend
 
 ### 技术细节
 
