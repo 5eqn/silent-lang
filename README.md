@@ -2,6 +2,22 @@
 
 English version: [README-en.md](README-en.md)
 
+### 概念验证中……
+
+期望的特性：
+
+- 媲美 C 的性能
+  - 不动于衷：[FIP / FBIP](https://koka-lang.github.io/koka/doc/book.html#sec-fbip)
+  - 线性数组：[Ordered Type](https://www.cs.cmu.edu/~rwh/papers/ordered/popl.pdf)
+  - 缓存友好：[Parameterised over Pools](https://dl.acm.org/doi/10.1145/3133850.3133861)
+  - 激进内联：[Partial Evaluation](https://pages.cs.wisc.edu/~cs701-1/LectureNotes/trunk/cs701-lec-09-03-2015/cs701-lec-09-03-2015.pdf)
+- 自由的结构体
+  - 任意纵切：[Row Poly](https://www.cl.cam.ac.uk/teaching/1415/L28/rows.pdf)
+  - 自然元组：[Unboxed Tuple](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/primitives.html#unboxed-tuples)
+- 美丽的可视化
+
+### 介绍
+
 绷语言，专为算法题设计的函数式编程语言，编译到 LLVM-IR。
 
 推荐使用 😅 作为文件后缀和行注释标识。
@@ -232,9 +248,14 @@ print(z)
 - [x] performance improve
 - [x] return value
 - [x] prefix operators
+- [ ] nope anywhere
 - [ ] vector
 - [ ] string
-- [ ] debugging
+- [ ] print as operation
+- [ ] pattern match anywhere
+- [ ] dependent subtypes
+- [ ] custom prefix and infix operators
+- [ ] visuallized debugging
 - [ ] mutual-rec
 - [ ] closure
 - [ ] use llvm binding
@@ -272,7 +293,7 @@ silent-lang 会对代码进行「部分求值」，发现实际上被 `print` �
 define dso_local i32 @main() #0 {
   %x1 = call i32 @input()
   %x2 = call i32 @input()
-  call void @print(i32 noundef %x2)
+  call nope @print(i32 noundef %x2)
   ret i32 0
 }
 ```
@@ -325,7 +346,7 @@ x12:
 
 x13:
   %x3 = load i32, ptr %x10, align 4
-  call void @print(i32 noundef %x3)
+  call nope @print(i32 noundef %x3)
   ret i32 0
 }
 ```
@@ -372,7 +393,7 @@ define dso_local i32 @main() #0 {
   %x2 = call i32 @input()
   %x3 = add nsw i32 9, %x2
   %x4 = add nsw i32 %x3, %x1
-  call void @print(i32 noundef %x4)
+  call nope @print(i32 noundef %x4)
   ret i32 0
 }
 ```
@@ -417,83 +438,12 @@ print(r)
 数组输出：
 
 ```
-let n = input(100004) in
+let n = input
 
-let a[i of n] = input in
-let b[i of n] = print(a[i]) in
-
-0
-```
-
-等效于：
-
-```c
-int a[100004];
-int b[100004];
-int main() {
-  int i;
-  i = 0;
-  while (true) {
-    if (i == n) {
-      break;
-    } else {
-      a[i] = input();
-    }
-    i++;
-  }
-  i = 0;
-  while (true) {
-    if (i == n) {
-      break;
-    } else {
-      b[i] = print(a[i]);
-    }
-    i++;
-  }
-  return 0;
-}
-```
-
-递归输出：
-
-```
-let n = input(100004) in
-
-let a[i of n] = input in
-let i = 0 rec
-  if i == n then nope else
-  let _ = print(a[i]) in
-  i + 1 in
+let a[i] = rec if i == n then nope else input
+let _[i] = rec if i == n then nope else print(a[i])
 
 0
-```
-
-等效于：
-
-```c
-int a[100004];
-int main() {
-  int i;
-  i = 0;
-  while (true) {
-    if (i == n) {
-      break;
-    } else {
-      a[i] = input();
-    }
-    i++;
-  }
-  i = 0;
-  while (true) {
-    if (i == n) {
-      break;
-    } else {
-      print(a[i]);
-      i = i + 1;
-    }
-  }
-  return 0;
-}
 ```
 
 树状数组初始化：
@@ -501,16 +451,72 @@ int main() {
 ```
 let n = input in
 
-let a[i of n + 1] = 
-  if i == 0 then 0 else input in
+let a[i] = 0 rec
+  if i > n then nope else input
 
-let b[i of n + 1] = 
-  if i == 0 then 0 else
+let b[i] = 0 rec
+  if i > n then nope else
   let t, m = a[i], i - 1 rec
     if m & 1 
     then t + b[m], m - m & -m
-    else nope in
+    else nope
   t
 
-let c[i of n + 1] = print(b[i])
+let _[i] = 0 rec print(b[i])
+```
+
+二维数组：
+
+```
+let a[i] = rec if i == n then nope else
+  let b[j] = rec if j == m then nope else input
+  b
+```
+
+归并排序：
+
+```
+let sort = (arr: int[n]) =>
+  match(n)
+    [0, 1]   => arr
+    [2, inf) => let a[i], x, y = nope, sort(arr[0..n/2]), sort(arr[n/2..1]) rec
+      match(x, y)
+        nil     , nil      => nope
+        xh :: xt, nil      => xh, xt, nil
+        nil     , yh :: yt => yh, nil, yt
+        xh :: xt, yh :: yt => if xh < yh then xh, xt, y else yh, x, yt
+```
+
+快速排序：
+
+```
+let filt = (arr: int[n]) => (pred: int -> bool) =>
+  let a[i], rest = nope, arr rec
+    match(arr)
+      nil => nope
+      hd :: tl => if pred(hd) then hd, tl else nope, tl
+  
+let sort = (arr: int[n]) =>
+  match(n)
+    [0, 1]   => arr
+    [2, inf) => 
+      sort(filt(arr)((x: int) => x < arr[0])) + [arr[0]] + 
+      sort(filt(arr)((x: int) => x >= arr[0]))
+```
+
+递归：
+
+```
+let fib = (x: int) =>
+  if x == 0 then 0 else
+  if x == 1 then 1 else
+  fib(x - 1) + fib(x - 2)
+
+fib(8)
+```
+
+```
+init = 8
+x <- init
+
 ```

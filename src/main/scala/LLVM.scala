@@ -24,8 +24,8 @@ enum IROp:
   case Pre(oprt: Pref, res: IRVal, ty: Type, value: IRVal)
   case Alt(res: List[IRVal], ty: Types, cond: IRVal, x: IRPack, y: IRPack)
   case Rec(res: List[IRVal], ty: Types, init: IRVal, rec: IRPack)
-  case Idx(res: IRVal, arrTy: Type, eleTy: Type, value: IRVal, idx: IRVal)
-  case Arr(res: IRVal, arrTy: Type, eleTy: Type, rec: IRPack)
+  case Idx(res: IRVal, ptr: IRPtr, idxTy: Type, idx: IRVal)
+  case Arr(res: IRVal, ty: Type, cntTy: Type, cnt: IRVal, rec: IRPack)
 
   // 把操作转化成 LLVM-IR 代码字符串
   def compile(exit: Option[String]): String = this match
@@ -119,18 +119,33 @@ $store
 
 $l2:"""
       ret
-    case Idx(res, arrTy, eleTy, value, idx) =>
-      val ptr = fresh
-      s"  $ptr = getelementptr inbounds $arrTy, ptr $value, i64 0, i64 $idx\n  $res = load $eleTy, ptr $ptr, align 4"
-    case Arr(res, arrTy, eleTy, rec) => ""
+
+    // 遇到数组取值块，先获得位移之后的指针，然后对新指针进行 load
+    case Idx(res, ptr, idxTy, idx) =>
+      val (indexer, next) = ptr.index(idxTy, idx)
+      s"$indexer\n  $res = ${next.load(res)}"
+
+    // 遇到数组初始化块，先申请内存
+    case Arr(res, ty, cntTy, cnt, rec) =>
+      val ptr = IRPtr.next(ty)
+      val alloc = ptr.alloca(cntTy, cnt)
+
+      // 构造循环语句
+      s""
 
 // LLVM-IR 指针
 case class IRPtr(name: String, ty: Type):
+  override def toString(): String = s"%$name"
   def store(v: IRVal) = v match
     case IRVal.Brk => ""
-    case _         => s"""  store $ty $v, ptr %$name, align 4"""
-  def alloca = s"  %$name = alloca $ty, align 4"
-  def load(to: IRVal) = s"  $to = load $ty, ptr %$name, align 4"
+    case _         => s"""  store $ty $v, ptr $this, align 4"""
+  def alloca = s"  $this = alloca $ty, align 4"
+  def alloca(cntTy: Type, cnt: IRVal) =
+    s"  $this = alloca $ty, $cntTy $cnt, align 16"
+  def load(to: IRVal) = s"  $to = load $ty, ptr $this, align 4"
+  def index(idxTy: Type, idx: IRVal) =
+    val ptr = IRPtr.next(ty)
+    (s"  $ptr = getelementptr inbounds $ty, ptr $this, $idxTy $idx", ptr)
 
 object IRPtr:
   def next(ty: Type) = IRPtr(fresh, ty)
