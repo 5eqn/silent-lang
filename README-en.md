@@ -5,13 +5,14 @@
 Expected features:
 
 - Performant like C
-  - Fully in-Place：[FIP / FBIP](https://koka-lang.github.io/koka/doc/book.html#sec-fbip)
-  - Vector：[Ordered Type](https://www.cs.cmu.edu/~rwh/papers/ordered/popl.pdf)
-  - Cache-Friendly：[Parameterised over Pools](https://dl.acm.org/doi/10.1145/3133850.3133861)
-  - Aggressive inlining：[Partial Evaluation](https://pages.cs.wisc.edu/~cs701-1/LectureNotes/trunk/cs701-lec-09-03-2015/cs701-lec-09-03-2015.pdf)
+  - Fully in-Place: [FIP / FBIP](https://koka-lang.github.io/koka/doc/book.html#sec-fbip)
+  - Vector: [Ordered Type](https://www.cs.cmu.edu/~rwh/papers/ordered/popl.pdf)
+  - Cache-Friendly: [Parameterised over Pools](https://dl.acm.org/doi/10.1145/3133850.3133861)
+  - Aggressive inlining: [Partial Evaluation](https://pages.cs.wisc.edu/~cs701-1/LectureNotes/trunk/cs701-lec-09-03-2015/cs701-lec-09-03-2015.pdf)
 - Free like Python
-  - Arbitrary Polymorphic：[Row Poly](https://www.cl.cam.ac.uk/teaching/1415/L28/rows.pdf)
-  - Unboxed Tuple：[Unboxed Tuple](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/primitives.html#unboxed-tuples)
+  - Arbitrary Polymorphic: [Row Poly](https://www.cl.cam.ac.uk/teaching/1415/L28/rows.pdf)
+  - Unboxed Tuple: [Unboxed Tuple](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/primitives.html#unboxed-tuples)
+  - Dependent Type: [Dependent Type](https://wiki.haskell.org/Dependent_type)
 - Beautiful visualization
 
 ### brief

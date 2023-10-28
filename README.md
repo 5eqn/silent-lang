@@ -14,6 +14,7 @@ English version: [README-en.md](README-en.md)
 - 自由的结构体
   - 任意纵切：[Row Poly](https://www.cl.cam.ac.uk/teaching/1415/L28/rows.pdf)
   - 自然元组：[Unboxed Tuple](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/primitives.html#unboxed-tuples)
+  - 依值类型：[Dependent Type](https://wiki.haskell.org/Dependent_type)
 - 美丽的可视化
 
 ### 介绍
