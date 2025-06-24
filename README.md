@@ -1,6 +1,6 @@
 ## silent-lang
 
-[Tree-sitter Grammar](https://tree-sitter.github.io/tree-sitter/): [Zjl37/tree-sitter-silent-lang](https://github.com/Zjl37/tree-sitter-silent-lang)
+[Tree-sitter](https://tree-sitter.github.io/tree-sitter/) grammar: [Zjl37/tree-sitter-silent-lang](https://github.com/Zjl37/tree-sitter-silent-lang)
 
 English version: [README-en.md](README-en.md)
 
