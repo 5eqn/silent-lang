@@ -1,10 +1,12 @@
 ## silent-lang
 
+[Tree-sitter Grammar](https://tree-sitter.github.io/tree-sitter/): [Zjl37/tree-sitter-silent-lang](https://github.com/Zjl37/tree-sitter-silent-lang)
+
 English version: [README-en.md](README-en.md)
 
 ### 概念验证中……
 
-期望的特性：
+~期望的特性~ 作者已经退坑 PL 了，所以不会做以下的特性：
 
 - 媲美 C 的性能
   - 不动于衷：[FIP / FBIP](https://koka-lang.github.io/koka/doc/book.html#sec-fbip)
